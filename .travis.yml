@@ -31,16 +31,12 @@ before_install:
     fi
   - export QLIBDIR
   - mkdir q
-  - export QHOME=${pwd}/q
+  - export QHOME=q
   - export PATH=${PATH}:${QHOME}/${QLIBDIR}
   - echo $QHOME > qhome.txt
   - cat qhome.txt
   - echo $PATH > path.txt
   - cat path.txt
-  - echo $OD > od.txt
-  - cat od.txt
-  - echo $QLIC_KC > qlic.txt
-  - cat qlic.txt
   - if [[ $TESTS == "True" && "$OD" != "" && "$QLIC_KC" != "" ]]; then
       echo "Download kdb+"
       curl -u $NEXUS_USER:$NEXUS_PASS -o q/q.zip -L $OD;
