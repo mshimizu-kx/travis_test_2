@@ -109,6 +109,7 @@ impl MsgHeader{
   // * Message Type: Synchronous
   // * Compressed: 0
   // * Length: 0
+  #[allow(dead_code)]
   pub(crate) fn default() -> Self{
     MsgHeader{
       encode: 1,
@@ -147,45 +148,53 @@ impl MsgHeader{
     Ok(header)
   }
   
-  // Get encoding from the eader
+  // Get encoding from the header
+  #[allow(dead_code)]
   pub(crate) fn get_encode(&self) -> u8{
     self.encode
   }
 
   // Set encoding to the header
+  #[allow(dead_code)]
   pub(crate) fn encode(mut self, enc: Encode) -> Self{
     self.encode = enc as u8;
     self
   }
 
   // Get encoding from the eader
+  #[allow(dead_code)]
   pub(crate) fn get_msg_type(&self) -> u8{
     self.msg_type
   }
 
   // Set message type to the header
+  #[allow(dead_code)]
   pub(crate) fn msg_type(mut self, msg_t: MessageType) -> Self{
     self.msg_type = msg_t as u8;
     self
   }
 
   // Get compression flag from the eader
+  #[allow(dead_code)]
   pub(crate) fn get_compressed(&self) -> u8{
     self.compressed
   }
 
   // Set compression flag to the header
+  #[allow(dead_code)]
   pub(crate) fn compressed(mut self, comp: u8) -> Self{
     self.compressed = comp;
     self
   }
 
   // Get length from the eader
+  #[allow(dead_code)]
   pub(crate) fn get_length(&self) -> u32{
     self.length
   }
 
   // Set length of data frame to the header
+  #[allow(dead_code)]
   pub(crate) fn length(mut self, len: u32) -> Self{
     self.length = len;
     self

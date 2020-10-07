@@ -44,8 +44,10 @@ brfore_install:
 script:
   - cargo build --release
   ## Start q process on 5000
-  - q -p 5000 & 2>&1
+  - nohup q -p 5000 < /dev/null >> qtest.log 2>&1 & 
   ## Test
   - cargo run --example test --release
+  ## Clean up file
+  - rm qtest.log
 notifications:
   slack: kxsys:oDr1mgvVq4ztmPXalwUs4Gio

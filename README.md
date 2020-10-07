@@ -1,9 +1,5 @@
 # rustkdb
 Rust interface for kdb+
-[![GitHub release (latest by date)](https://img.shields.io/github/v/release/kxsystems/gokdb?include_prereleases)](https://github.com/kxsystems/gokdb/releases)
-[![Travis (.org) branch](https://img.shields.io/travis/kxsystems/gokdb/master?label=travis%20build)](https://travis-ci.org/kxsystems/gokdb/branches)
-[![Go Report Card](https://goreportcard.com/badge/github.com/kxsystems/gokdb)](https://goreportcard.com/report/github.com/kxsystems/gokdb)
-[![GoDoc](https://img.shields.io/badge/GoDoc-reference-007d9c)](https://pkg.go.dev/github.com/kxsystems/gokdb)
 
 ## Introduction
 

@@ -5,10 +5,16 @@
 */
 
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
+//                       Settings                        //
+//+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
+
+#![allow(non_snake_case)]
+#![allow(non_upper_case_globals)]
+
+//+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 //                     Load Library                      //
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 
-extern crate rustkdb;
 #[macro_use]
 extern crate float_cmp;
 
@@ -19,7 +25,6 @@ use std::panic;
 use chrono::prelude::*;
 use chrono::{Duration, Utc, NaiveTime};
 use tokio::net::TcpStream;
-use tokio_native_tls::TlsStream;
 
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 //                        Macros                         //

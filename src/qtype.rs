@@ -4,12 +4,6 @@
 //! and conversion functions between IPC message and Rust Q object
 
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
-//                       Settings                        //
-//+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
-
-#![allow(non_snake_case)]
-
-//+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 //                     Load Library                      //
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 
@@ -1615,6 +1609,7 @@ impl QTime{
     }
   }
 
+  #[allow(dead_code)]
   fn into_i32(self) -> io::Result<i32>{
     match self{
       QTime::Inf(i) | QTime::Null(i) => Ok(i),
