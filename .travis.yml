@@ -17,15 +17,15 @@ os: linux
 dist: xenial
 
 brfore_install:
-  - FILE_ROOT="rustkdb"
+  - export FILE_ROOT="rustkdb"
   - export TESTS="True"
   ## Setup q
   - if [[ $TRAVIS_OS_NAME == "windows" ]]; then
-      QLIBDIR=w64; OD=$W64
+      QLIBDIR=w64; OD=$W64;
     elif [[ $TRAVIS_OS_NAME == "linux" ]]; then
-      QLIBDIR=l64; OD=$L64
+      QLIBDIR=l64; OD=$L64;
     elif [[ $TRAVIS_OS_NAME == "osx" ]]; then
-      QLIBDIR=m64; OD=$M64
+      QLIBDIR=m64; OD=$M64;
     else
       echo "unknown OS ('$TRAVIS_OS_NAME')" >&2; exit 1;
   - export QLIBDIR
