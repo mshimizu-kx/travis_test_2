@@ -45,6 +45,7 @@ script:
   - cargo build --release
   ## Start q process on 5000
   - ./travistest.sh
+  - cat qtest.log
   ## Clean up file
   - rm qtest.log
 notifications:
