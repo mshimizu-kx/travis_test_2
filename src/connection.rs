@@ -277,7 +277,7 @@ async fn connect_tcp(host: &str, port: i32, timeout_millis: u64, trial_interval:
   let response=resolver.ipv4_lookup(format!("{}.", host).as_str()).await?;
   for ans in response{
     // For DEBUG
-    // println!("Got IP adress: {}", ans);
+    println!("Got IP adress: {}", ans);
     let hostport=format!("{}:{}", ans, port);
     let addr=hostport.parse::<SocketAddr>().expect("Could not parse hostport");
 
