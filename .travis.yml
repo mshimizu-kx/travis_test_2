@@ -37,10 +37,13 @@ before_install:
       curl -u $NEXUS_USER:$NEXUS_PASS -o q/q.zip -L $OD;
       unzip -d q/ q/q.zip;
       rm q/q.zip;
-      echo -n $QLIC_KC |base64 --decode > qhome/kc.lic;
+      echo -n $QLIC_KC |base64 --decode > q/kc.lic;
     else
       echo No kdb+, no tests;
     fi
+  - ls -l q
+  - ls -l ${QHOME}/${QLIBDIR}
+  - echo ${PATH}
 script:
   - cargo build --release
   ## Start q process on 5000
