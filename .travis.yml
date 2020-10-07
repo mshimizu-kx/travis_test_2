@@ -1,0 +1,49 @@
+jobs:
+  include:
+    - dist: xenial
+      os: linux
+    - dist: bionic
+      os: linux
+    - os: winsows
+    - os: osx
+language: rust
+rust:
+  - stable
+  - 1.42.0
+  - 1.44.0
+  - 1.46.0
+cache: cargo
+
+brfore_install:
+  - FILE_ROOT="rustkdb"
+  - export TESTS="True"
+install:
+  ## Setup q
+  - if [[ $TRAVIS_OS_NAME == "windows" ]]; then
+      QLIBDIR=w64; OD=$W64
+    elif [[ $TRAVIS_OS_NAME == "linux" ]]; then
+      QLIBDIR=l64; OD=$L64
+    elif [[ $TRAVIS_OS_NAME == "osx" ]]; then
+      QLIBDIR=m64; OD=$M64
+    else
+      echo "unknown OS ('$TRAVIS_OS_NAME')" >&2; exit 1;
+  - export QLIBDIR
+  - mkdir q
+  - export QHOME=${pwd}/q
+  - export PATH=${PATH}:${QHOME}/${QLIBDIR}
+  - if [[ $TESTS == "True" && "OD" != "" && "$QLIC_KC" != "" ]]; then
+      curl -u $NEXUS_USER:$NEXUS_PASS -o q/q.zip -L $OD;
+      unzip -d q/ q/q.zip;
+      rm q/q.zip;
+      echo -n $QLIC_KC |base64 --decode > qhome/kc.lic;
+    else
+      echo No kdb+, no tests;
+    fi
+script:
+  - cargo build --release
+  ## Start q process on 5000
+  - q -p 5000 & 2>&1
+  ## Test
+  - cargo run --example test --release
+notifications:
+  slack: kxsys:oDr1mgvVq4ztmPXalwUs4Gio

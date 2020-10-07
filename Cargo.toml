@@ -1,0 +1,21 @@
+[package]
+name = "rustkdb"
+version = "0.1.0"
+authors = ["mshimizu-kx"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+chrono="0.4.5"
+futures="0.3.5"
+tokio={version="0.2", features=["macros", "rt-threaded", "tcp", "io-util", "time"]}
+native-tls="~0.2"
+tokio-native-tls="~0.1"
+trust-dns-resolver="0.19.5"
+lazy_static="^1.4"
+async-recursion = "~0.3"
+
+# For test and example
+float-cmp="~0.8"
+rand="~0.7"
