@@ -44,9 +44,7 @@ brfore_install:
 script:
   - cargo build --release
   ## Start q process on 5000
-  - nohup q -p 5000 < /dev/null >> qtest.log 2>&1 & 
-  ## Test
-  - cargo run --example test --release
+  - ./travistest.sh
   ## Clean up file
   - rm qtest.log
 notifications:

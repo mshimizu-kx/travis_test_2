@@ -1950,10 +1950,10 @@ impl fmt::Display for Q{
       Q::TimeL(ql) => {write_enlist!(f, ql); write_simple_qlist!(f, ql, |item|{format!("{}", format_time(item, "%H:%M:%S%.3f"))}, "")},
       Q::MixedL(ql) => {
         write_enlist!(f, ql); 
-        write!(f, "(");
+        write!(f, "(")?;
         for (i, q) in ql.get_vec().iter().enumerate(){
           if i!=0{
-            write!(f, ";");
+            write!(f, ";")?;
           }
           q.fmt(f)?;
         }
