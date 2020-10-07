@@ -1,3 +1,5 @@
+os: linux
+dist: xenial
 language: rust
 rust:
   - 1.44.0
@@ -10,9 +12,6 @@ jobs:
       os: linux
     - os: windows
     - os: osx
-cache: cargo
-os: linux
-dist: xenial
 
 before_install:
   - export FILE_ROOT="rustkdb"
