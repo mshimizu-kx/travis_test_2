@@ -17,7 +17,6 @@ cache: cargo
 brfore_install:
   - FILE_ROOT="rustkdb"
   - export TESTS="True"
-install:
   ## Setup q
   - if [[ $TRAVIS_OS_NAME == "windows" ]]; then
       QLIBDIR=w64; OD=$W64
