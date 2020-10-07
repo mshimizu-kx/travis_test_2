@@ -8,8 +8,6 @@ jobs:
     - os: osx
 language: rust
 rust:
-  - stable
-  - 1.42.0
   - 1.44.0
   - 1.46.0
 cache: cargo
@@ -33,10 +31,6 @@ before_install:
   - mkdir q
   - export QHOME=q
   - export PATH=${PATH}:${QHOME}/${QLIBDIR}
-  - echo $QHOME > qhome.txt
-  - cat qhome.txt
-  - echo $PATH > path.txt
-  - cat path.txt
   - if [[ $TESTS == "True" && "$OD" != "" && "$QLIC_KC" != "" ]]; then
       curl -u $NEXUS_USER:$NEXUS_PASS -o ${QHOME}/q.zip -L $OD;
       unzip -d ${QHOME}/ ${QHOME}/q.zip;
@@ -45,15 +39,13 @@ before_install:
     else
       echo No kdb+, no tests;
     fi
-  - ls -l q
-  - ls -l ${QHOME}/${QLIBDIR}
-  - echo ${PATH}
 script:
   - cargo build --release
   ## Start q process on 5000
-  - ./travistest.sh
-  - cat qtest.log
-  ## Clean up file
+  - nohup q -p 5000 < /dev/null >> qtest.log 2>&1 &
+  ## Run test script
+  - cargo run --example test --release
+  ## Clean up log file
   - rm qtest.log
 notifications:
   slack: kxsys:oDr1mgvVq4ztmPXalwUs4Gio
