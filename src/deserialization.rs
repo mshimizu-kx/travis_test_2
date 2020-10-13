@@ -23,7 +23,6 @@ use async_recursion::async_recursion;
 /// Parse bytes into q onject
 #[async_recursion]
 pub async fn parse_q(reader: &mut BufReader<&[u8]>, vectype: i8, encode: u8) -> Q{
-  //let vectype=reader.read_i8().await.expect("Failed to parse vec tor type");
   if vectype == Q_GENERAL_NULL{
     reader.read_u8().await.expect("Failed to read unused (::) value");
     Q::GeneralNull(QGeneralNull{})
@@ -224,7 +223,7 @@ async fn parse_datetime(reader: &mut BufReader<&[u8]>, encode: u8) -> DateTime<U
     Q_0Nz
   }
   else if datetime.is_infinite(){
-    Q_0Wz
+    *Q_0Wz
   }
   else{
     // Add 30 years for kdb+ offset

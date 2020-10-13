@@ -13,6 +13,8 @@ use chrono::Utc;
 
 #[tokio::main]
 async fn main() -> io::Result<()>{
+
+  // Connect to q process  over TLS with 1 second timeout and 200 milliseconds retry interval
   let mut handle=connect_tls("localhost", 5000, "kdbuser:pass", 1000, 200).await.expect("Failed to connect");
 
   // Build keyed table
@@ -29,7 +31,8 @@ async fn main() -> io::Result<()>{
     ]
   ).unwrap();
     
-  // Set remote function 'assign'
+  // Set remote function 'assign' by an asynchronous message in Little Endian encode
+  // "_le" means Little Endian
   send_string_query_async_le(&mut handle, "assign:set").await?;
 
   // Set keyed table to remote variable "keytab" b calling 'assign' with arguments
@@ -41,6 +44,7 @@ async fn main() -> io::Result<()>{
   println!("Original table:\n{}", res_keyed_table);
 
   // Set 'upd' function remotely
+  // query is sent in Big Endian ("_be")
   send_string_query_async_be(&mut handle, "upd:upsert").await?;
 
   // Update the table
@@ -68,6 +72,9 @@ async fn main() -> io::Result<()>{
       QGEN::new_float_list(Attribute::None, vec![113.42_f64, 1000.0, 2749.4]),
       QGEN::new_symbol_list(Attribute::None, vec!["Newry", "GoldenCity", "London"])
     ]);
+
+  // Close the handle
+  close_tls(&mut handle).await?;
 
   Ok(())
 }

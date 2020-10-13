@@ -17,70 +17,70 @@ use async_recursion::async_recursion;
 pub(crate) async fn serialize_q(message: &mut Vec<u8>, qobj: Q, encode: u8) -> io::Result<()>{
 
   match qobj{
-    Q::Bool(b) => serialize_bool(message, b).await,
-    Q::GUID(g) => serialize_guid(message, g).await,
-    Q::Byte(b) => serialize_byte(message, b).await,
-    Q::Short(s) => serialize_short(message, s, encode).await,
-    Q::Int(i) => serialize_int(message, i, encode).await,
-    Q::Long(j) => serialize_long(message, j, encode).await,
-    Q::Real(r) => serialize_real(message, r, encode).await,
-    Q::Float(f) => serialize_float(message, f, encode).await,
-    Q::Char(c) => serialize_char(message, c).await,
-    Q::Symbol(s) => serialize_symbol(message, s).await,
-    Q::Timestamp(_) => serialize_timestamp(message, qobj.into_i64()?, encode).await,
-    Q::Month(_) => serialize_month(message, qobj.into_i32()?, encode).await,
-    Q::Date(_) => serialize_date(message, qobj.into_i32()?, encode).await,
-    Q::Datetime(_) => serialize_datetime(message, qobj.into_f64()?, encode).await,
-    Q::Timespan(_) => serialize_timespan(message, qobj.into_i64()?, encode).await,
-    Q::Minute(_) => serialize_minute(message, qobj.into_i32()?, encode).await,
-    Q::Second(_) => serialize_second(message, qobj.into_i32()?, encode).await,
-    Q::Time(_) => serialize_time(message, qobj.into_i32()?, encode).await,
-    Q::BoolL(_) => serialize_bool_list(message, qobj, encode).await?,
-    Q::GUIDL(_) => serialize_guid_list(message, qobj, encode).await?,
-    Q::ByteL(_) => serialize_byte_list(message, qobj, encode).await?,
-    Q::ShortL(_) => serialize_short_list(message, qobj, encode).await?,
-    Q::IntL(_) => serialize_int_list(message, qobj, encode).await?,
-    Q::LongL(_) => serialize_long_list(message, qobj, encode).await?,
-    Q::RealL(_) => serialize_real_list(message, qobj, encode).await?,
-    Q::FloatL(_) => serialize_float_list(message, qobj, encode).await?,
-    Q::CharL(_) => serialize_char_list(message, qobj, encode).await?,
-    Q::SymbolL(_) => serialize_symbol_list(message, qobj, encode).await?,
-    Q::TimestampL(_) => serialize_timestamp_list(message, qobj, encode).await?,
-    Q::MonthL(_) => serialize_month_list(message, qobj, encode).await?,
-    Q::DateL(_) => serialize_date_list(message, qobj, encode).await?,
-    Q::DatetimeL(_) => serialize_datetime_list(message, qobj, encode).await?,
-    Q::TimespanL(_) => serialize_timespan_list(message, qobj, encode).await?,
-    Q::MinuteL(_) => serialize_minute_list(message, qobj, encode).await?,
-    Q::SecondL(_) => serialize_second_list(message, qobj, encode).await?,
-    Q::TimeL(_) => serialize_time_list(message, qobj, encode).await?,
+    Q::Bool(b) => serialize_bool(message, b),
+    Q::GUID(g) => serialize_guid(message, g),
+    Q::Byte(b) => serialize_byte(message, b),
+    Q::Short(s) => serialize_short(message, s, encode),
+    Q::Int(i) => serialize_int(message, i, encode),
+    Q::Long(j) => serialize_long(message, j, encode),
+    Q::Real(r) => serialize_real(message, r, encode),
+    Q::Float(f) => serialize_float(message, f, encode),
+    Q::Char(c) => serialize_char(message, c),
+    Q::Symbol(s) => serialize_symbol(message, s),
+    Q::Timestamp(_) => serialize_timestamp(message, qobj.into_i64()?, encode),
+    Q::Month(_) => serialize_month(message, qobj.into_i32()?, encode),
+    Q::Date(_) => serialize_date(message, qobj.into_i32()?, encode),
+    Q::Datetime(_) => serialize_datetime(message, qobj.into_f64()?, encode),
+    Q::Timespan(_) => serialize_timespan(message, qobj.into_i64()?, encode),
+    Q::Minute(_) => serialize_minute(message, qobj.into_i32()?, encode),
+    Q::Second(_) => serialize_second(message, qobj.into_i32()?, encode),
+    Q::Time(_) => serialize_time(message, qobj.into_i32()?, encode),
+    Q::BoolL(_) => serialize_bool_list(message, qobj, encode)?,
+    Q::GUIDL(_) => serialize_guid_list(message, qobj, encode)?,
+    Q::ByteL(_) => serialize_byte_list(message, qobj, encode)?,
+    Q::ShortL(_) => serialize_short_list(message, qobj, encode)?,
+    Q::IntL(_) => serialize_int_list(message, qobj, encode)?,
+    Q::LongL(_) => serialize_long_list(message, qobj, encode)?,
+    Q::RealL(_) => serialize_real_list(message, qobj, encode)?,
+    Q::FloatL(_) => serialize_float_list(message, qobj, encode)?,
+    Q::CharL(_) => serialize_char_list(message, qobj, encode)?,
+    Q::SymbolL(_) => serialize_symbol_list(message, qobj, encode)?,
+    Q::TimestampL(_) => serialize_timestamp_list(message, qobj, encode)?,
+    Q::MonthL(_) => serialize_month_list(message, qobj, encode)?,
+    Q::DateL(_) => serialize_date_list(message, qobj, encode)?,
+    Q::DatetimeL(_) => serialize_datetime_list(message, qobj, encode)?,
+    Q::TimespanL(_) => serialize_timespan_list(message, qobj, encode)?,
+    Q::MinuteL(_) => serialize_minute_list(message, qobj, encode)?,
+    Q::SecondL(_) => serialize_second_list(message, qobj, encode)?,
+    Q::TimeL(_) => serialize_time_list(message, qobj, encode)?,
     Q::MixedL(_) => serialize_mixed_list(message, qobj, encode).await?,
     Q::Table(_) => serialize_table(message, qobj, encode).await?,
     Q::Dictionary(_) => serialize_dictionary(message, qobj, encode).await?,
     Q::KeyedTable(_) => serialize_keyed_table(message, qobj, encode).await?,
-    Q::GeneralNull(_) => serialize_general_null(message).await?
+    Q::GeneralNull(_) => serialize_general_null(message)?
   }
 
   Ok(())
 
 }
 
-async fn serialize_bool(message: &mut Vec<u8>, obj: bool){
+fn serialize_bool(message: &mut Vec<u8>, obj: bool){
   // -1 (bool atom) and object
   message.extend(&[0xff, obj as u8]);
 }
 
-async fn serialize_guid(message: &mut Vec<u8>, obj: [u8; 16]){
+fn serialize_guid(message: &mut Vec<u8>, obj: [u8; 16]){
   // -2 (GUID atom)
   message.push(0xfe); 
   message.extend(&obj);
 }
 
-async fn serialize_byte(message: &mut Vec<u8>, obj: u8){
+fn serialize_byte(message: &mut Vec<u8>, obj: u8){
   // -4 (byte atom) and object
   message.extend(&[0xfc, obj]);
 }
 
-async fn serialize_short(message: &mut Vec<u8>, obj: i16, encode: u8){
+fn serialize_short(message: &mut Vec<u8>, obj: i16, encode: u8){
   // -5 (short atom)
   message.push(0xfb); 
   let short=match encode{
@@ -90,7 +90,7 @@ async fn serialize_short(message: &mut Vec<u8>, obj: i16, encode: u8){
   message.extend(&short)
 }
 
-async fn serialize_int(message: &mut Vec<u8>, obj: i32, encode: u8){
+fn serialize_int(message: &mut Vec<u8>, obj: i32, encode: u8){
   // -7 (int atom)
   message.push(0xfa); 
   let int=match encode{
@@ -100,7 +100,7 @@ async fn serialize_int(message: &mut Vec<u8>, obj: i32, encode: u8){
   message.extend(&int);
 }
 
-async fn serialize_long(message: &mut Vec<u8>, obj: i64, encode: u8){
+fn serialize_long(message: &mut Vec<u8>, obj: i64, encode: u8){
   // -7 (long atom)
   message.push(0xf9); 
   let long=match encode{
@@ -110,7 +110,7 @@ async fn serialize_long(message: &mut Vec<u8>, obj: i64, encode: u8){
   message.extend(&long);
 }
 
-async fn serialize_real(message: &mut Vec<u8>, obj: f32, encode: u8){
+fn serialize_real(message: &mut Vec<u8>, obj: f32, encode: u8){
   // -8 (real atom)
   message.push(0xf8); 
   let real=match encode{
@@ -120,7 +120,7 @@ async fn serialize_real(message: &mut Vec<u8>, obj: f32, encode: u8){
   message.extend(&real);
 }
 
-async fn serialize_float(message: &mut Vec<u8>, obj: f64, encode: u8){
+fn serialize_float(message: &mut Vec<u8>, obj: f64, encode: u8){
   // -9 float atom
   message.push(0xf7); 
   let float=match encode{
@@ -130,18 +130,18 @@ async fn serialize_float(message: &mut Vec<u8>, obj: f64, encode: u8){
   message.extend(&float);
 }
 
-async fn serialize_char(message: &mut Vec<u8>, obj: char){
+fn serialize_char(message: &mut Vec<u8>, obj: char){
   // -10 (char atom)
   message.extend(&[0xf6, obj as u8]);
 }
 
-async fn serialize_symbol(message: &mut Vec<u8>, obj: String){
+fn serialize_symbol(message: &mut Vec<u8>, obj: String){
   // -11 (symbol atom)
   message.push(0xf5); 
   message.extend(&(obj+"\x00").into_bytes());
 }
 
-async fn serialize_timestamp(message: &mut Vec<u8>, obj: i64, encode: u8){
+fn serialize_timestamp(message: &mut Vec<u8>, obj: i64, encode: u8){
   // -12 (timestamp atom)
   message.push(0xf4); 
   let obj=match obj{
@@ -155,7 +155,7 @@ async fn serialize_timestamp(message: &mut Vec<u8>, obj: i64, encode: u8){
   message.extend(&timestamp);
 }
 
-async fn serialize_month(message: &mut Vec<u8>, obj: i32, encode: u8){
+fn serialize_month(message: &mut Vec<u8>, obj: i32, encode: u8){
   // -13 (month atom)
   message.push(0xf3); 
   let obj=match obj{
@@ -169,7 +169,7 @@ async fn serialize_month(message: &mut Vec<u8>, obj: i32, encode: u8){
   message.extend(&month);
 }
 
-async fn serialize_date(message: &mut Vec<u8>, obj: i32, encode: u8){
+fn serialize_date(message: &mut Vec<u8>, obj: i32, encode: u8){
   // -14 (date atom)
   message.push(0xf2); 
   let obj=match obj{
@@ -183,7 +183,7 @@ async fn serialize_date(message: &mut Vec<u8>, obj: i32, encode: u8){
   message.extend(&date);
 }
 
-async fn serialize_datetime(message: &mut Vec<u8>, obj: f64, encode: u8){
+fn serialize_datetime(message: &mut Vec<u8>, obj: f64, encode: u8){
   // -15 (datetime atom)
   message.push(0xf1); 
   let obj=if obj.is_nan() || obj.is_infinite(){
@@ -199,7 +199,7 @@ async fn serialize_datetime(message: &mut Vec<u8>, obj: f64, encode: u8){
   message.extend(&datetime);
 }
 
-async fn serialize_timespan(message: &mut Vec<u8>, obj: i64, encode: u8){
+fn serialize_timespan(message: &mut Vec<u8>, obj: i64, encode: u8){
   // -16 (timespan atom)
   message.push(0xf0); 
   let timespan=match encode{
@@ -209,7 +209,7 @@ async fn serialize_timespan(message: &mut Vec<u8>, obj: i64, encode: u8){
   message.extend(&timespan);
 }
 
-async fn serialize_minute(message: &mut Vec<u8>, obj: i32, encode: u8){
+fn serialize_minute(message: &mut Vec<u8>, obj: i32, encode: u8){
   // -17 (minute atom)
   message.push(0xef); 
   let minute=match encode{
@@ -219,7 +219,7 @@ async fn serialize_minute(message: &mut Vec<u8>, obj: i32, encode: u8){
   message.extend(&minute);
 }
 
-async fn serialize_second(message: &mut Vec<u8>, obj: i32, encode: u8){
+fn serialize_second(message: &mut Vec<u8>, obj: i32, encode: u8){
   // -18 (second atom)
   message.push(0xee); 
   let second=match encode{
@@ -229,7 +229,7 @@ async fn serialize_second(message: &mut Vec<u8>, obj: i32, encode: u8){
   message.extend(&second);
 }
 
-async fn serialize_time(message: &mut Vec<u8>, obj: i32, encode: u8){
+fn serialize_time(message: &mut Vec<u8>, obj: i32, encode: u8){
   // -19 (time atom)
   message.push(0xed); 
   let time=match encode{
@@ -239,7 +239,7 @@ async fn serialize_time(message: &mut Vec<u8>, obj: i32, encode: u8){
   message.extend(&time);
 }
 
-async fn serialize_bool_list(message: &mut Vec<u8>, obj: Q, encode: u8) -> io::Result<()>{
+fn serialize_bool_list(message: &mut Vec<u8>, obj: Q, encode: u8) -> io::Result<()>{
   message.push(1_u8);
   let (attribute, list) = obj.into_bool_vec()?;
   message.push(attribute as u8);
@@ -258,7 +258,7 @@ async fn serialize_bool_list(message: &mut Vec<u8>, obj: Q, encode: u8) -> io::R
   Ok(())
 }
 
-async fn serialize_guid_list(message: &mut Vec<u8>, obj: Q, encode: u8) -> io::Result<()>{
+fn serialize_guid_list(message: &mut Vec<u8>, obj: Q, encode: u8) -> io::Result<()>{
   message.push(2_u8);
   let (attribute, list) = obj.into_GUID_vec()?;
   message.push(attribute as u8);
@@ -276,7 +276,7 @@ async fn serialize_guid_list(message: &mut Vec<u8>, obj: Q, encode: u8) -> io::R
   Ok(())
 }
 
-async fn serialize_byte_list(message: &mut Vec<u8>, obj: Q, encode: u8) -> io::Result<()>{
+fn serialize_byte_list(message: &mut Vec<u8>, obj: Q, encode: u8) -> io::Result<()>{
   message.push(4_u8);
   let (attribute, list) = obj.into_u8_vec()?;
   message.push(attribute as u8);
@@ -294,7 +294,7 @@ async fn serialize_byte_list(message: &mut Vec<u8>, obj: Q, encode: u8) -> io::R
   Ok(())
 }
 
-async fn serialize_short_list(message: &mut Vec<u8>, obj: Q, encode: u8) -> io::Result<()>{
+fn serialize_short_list(message: &mut Vec<u8>, obj: Q, encode: u8) -> io::Result<()>{
   message.push(5_u8);
   let (attribute, list) = obj.into_i16_vec()?;
   message.push(attribute as u8);
@@ -317,7 +317,7 @@ async fn serialize_short_list(message: &mut Vec<u8>, obj: Q, encode: u8) -> io::
   Ok(())
 }
 
-async fn serialize_int_list(message: &mut Vec<u8>, obj: Q, encode: u8) -> io::Result<()>{
+fn serialize_int_list(message: &mut Vec<u8>, obj: Q, encode: u8) -> io::Result<()>{
   message.push(6_u8);
   let (attribute, list) = obj.into_i32_vec()?;
   message.push(attribute as u8);
@@ -340,7 +340,7 @@ async fn serialize_int_list(message: &mut Vec<u8>, obj: Q, encode: u8) -> io::Re
   Ok(())
 }
 
-async fn serialize_long_list(message: &mut Vec<u8>, obj: Q, encode: u8) -> io::Result<()>{
+fn serialize_long_list(message: &mut Vec<u8>, obj: Q, encode: u8) -> io::Result<()>{
   message.push(7_u8);
   let (attribute, list) = obj.into_i64_vec()?;
   message.push(attribute as u8);
@@ -363,7 +363,7 @@ async fn serialize_long_list(message: &mut Vec<u8>, obj: Q, encode: u8) -> io::R
   Ok(())
 }
 
-async fn serialize_real_list(message: &mut Vec<u8>, obj: Q, encode: u8) -> io::Result<()>{
+fn serialize_real_list(message: &mut Vec<u8>, obj: Q, encode: u8) -> io::Result<()>{
   message.push(8_u8);
   let (attribute, list) = obj.into_f32_vec()?;
   message.push(attribute as u8);
@@ -386,7 +386,7 @@ async fn serialize_real_list(message: &mut Vec<u8>, obj: Q, encode: u8) -> io::R
   Ok(())
 }
 
-async fn serialize_float_list(message: &mut Vec<u8>, obj: Q, encode: u8) -> io::Result<()>{
+fn serialize_float_list(message: &mut Vec<u8>, obj: Q, encode: u8) -> io::Result<()>{
   message.push(9_u8);
   let (attribute, list) = obj.into_f64_vec()?;
   message.push(attribute as u8);
@@ -409,7 +409,7 @@ async fn serialize_float_list(message: &mut Vec<u8>, obj: Q, encode: u8) -> io::
   Ok(())
 }
 
-async fn serialize_char_list(message: &mut Vec<u8>, obj: Q, encode: u8) -> io::Result<()>{
+fn serialize_char_list(message: &mut Vec<u8>, obj: Q, encode: u8) -> io::Result<()>{
   message.push(10_u8);
   let (attribute, list) = obj.into_char_vec()?;
   message.push(attribute as u8);
@@ -426,7 +426,7 @@ async fn serialize_char_list(message: &mut Vec<u8>, obj: Q, encode: u8) -> io::R
   Ok(())
 }
 
-async fn serialize_symbol_list(message: &mut Vec<u8>, obj: Q, encode: u8) -> io::Result<()>{
+fn serialize_symbol_list(message: &mut Vec<u8>, obj: Q, encode: u8) -> io::Result<()>{
   message.push(11_u8);
   let (attribute, list) = obj.into_string_vec()?;
   message.push(attribute as u8);
@@ -444,7 +444,7 @@ async fn serialize_symbol_list(message: &mut Vec<u8>, obj: Q, encode: u8) -> io:
   Ok(())
 }
 
-async fn serialize_timestamp_list(message: &mut Vec<u8>, obj: Q, encode: u8) -> io::Result<()>{
+fn serialize_timestamp_list(message: &mut Vec<u8>, obj: Q, encode: u8) -> io::Result<()>{
   message.push(12_u8);
   let (attribute, list) = obj.into_i64_vec()?;
   message.push(attribute as u8);
@@ -468,7 +468,7 @@ async fn serialize_timestamp_list(message: &mut Vec<u8>, obj: Q, encode: u8) -> 
   Ok(())
 }
 
-async fn serialize_month_list(message: &mut Vec<u8>, obj: Q, encode: u8) -> io::Result<()>{
+fn serialize_month_list(message: &mut Vec<u8>, obj: Q, encode: u8) -> io::Result<()>{
   message.push(13_u8);
   let (attribute, list) = obj.into_i32_vec()?;
   message.push(attribute as u8);
@@ -491,7 +491,7 @@ async fn serialize_month_list(message: &mut Vec<u8>, obj: Q, encode: u8) -> io::
   Ok(())
 }
 
-async fn serialize_date_list(message: &mut Vec<u8>, obj: Q, encode: u8) -> io::Result<()>{
+fn serialize_date_list(message: &mut Vec<u8>, obj: Q, encode: u8) -> io::Result<()>{
   message.push(14_u8);
   let (attribute, list) = obj.into_i32_vec()?;
   message.push(attribute as u8);
@@ -514,7 +514,7 @@ async fn serialize_date_list(message: &mut Vec<u8>, obj: Q, encode: u8) -> io::R
   Ok(())
 }
 
-async fn serialize_datetime_list(message: &mut Vec<u8>, obj: Q, encode: u8) -> io::Result<()>{
+fn serialize_datetime_list(message: &mut Vec<u8>, obj: Q, encode: u8) -> io::Result<()>{
   message.push(15_u8);
   let (attribute, list) = obj.into_f64_vec()?;
   message.push(attribute as u8);
@@ -537,7 +537,7 @@ async fn serialize_datetime_list(message: &mut Vec<u8>, obj: Q, encode: u8) -> i
   Ok(())
 }
 
-async fn serialize_timespan_list(message: &mut Vec<u8>, obj: Q, encode: u8) -> io::Result<()>{
+fn serialize_timespan_list(message: &mut Vec<u8>, obj: Q, encode: u8) -> io::Result<()>{
   message.push(16_u8);
   let (attribute, list) = obj.into_i64_vec()?;
   message.push(attribute as u8);
@@ -560,7 +560,7 @@ async fn serialize_timespan_list(message: &mut Vec<u8>, obj: Q, encode: u8) -> i
   Ok(())
 }
 
-async fn serialize_minute_list(message: &mut Vec<u8>, obj: Q, encode: u8) -> io::Result<()>{
+fn serialize_minute_list(message: &mut Vec<u8>, obj: Q, encode: u8) -> io::Result<()>{
   message.push(17_u8);
   let (attribute, list) = obj.into_i32_vec()?;
   message.push(attribute as u8);
@@ -583,7 +583,7 @@ async fn serialize_minute_list(message: &mut Vec<u8>, obj: Q, encode: u8) -> io:
   Ok(())
 }
 
-async fn serialize_second_list(message: &mut Vec<u8>, obj: Q, encode: u8) -> io::Result<()>{
+fn serialize_second_list(message: &mut Vec<u8>, obj: Q, encode: u8) -> io::Result<()>{
   message.push(18_u8);
   let (attribute, list) = obj.into_i32_vec()?;
   message.push(attribute as u8);
@@ -606,7 +606,7 @@ async fn serialize_second_list(message: &mut Vec<u8>, obj: Q, encode: u8) -> io:
   Ok(())
 }
 
-async fn serialize_time_list(message: &mut Vec<u8>, obj: Q, encode: u8) -> io::Result<()>{
+fn serialize_time_list(message: &mut Vec<u8>, obj: Q, encode: u8) -> io::Result<()>{
   message.push(19_u8);
   let (attribute, list) = obj.into_i32_vec()?;
   message.push(attribute as u8);
@@ -651,7 +651,7 @@ async fn serialize_table(message: &mut Vec<u8>, obj: Q, encode: u8) -> io::Resul
   message.extend(&[98_u8, 0, 99]);
   let (header, value) = obj.into_key_value()?;
   // Write header
-  serialize_symbol_list(message, header, encode).await?;
+  serialize_symbol_list(message, header, encode)?;
   // Write column data
   serialize_mixed_list(message, value, encode).await?;
 
@@ -679,7 +679,7 @@ async fn serialize_keyed_table(message: &mut Vec<u8>, obj: Q, encode: u8) -> io:
   Ok(())
 }
 
-async fn serialize_general_null(message: &mut Vec<u8>) -> io::Result<()>{
+fn serialize_general_null(message: &mut Vec<u8>) -> io::Result<()>{
   message.extend(&[101_u8, 0]);
   Ok(())
 }

@@ -108,7 +108,11 @@
 //! q)upd:upsert
 //! ```
 //! Then Rust connects to the q process and send queries.
+//!  In this example q objects are built with macros.
 //! ```
+//! #[macro_use]
+//! extern crate rustkdb;
+//! 
 //! use rustkdb::qtype::*
 //! use rustkdb::connection::*;
 //! 
@@ -127,24 +131,24 @@
 //! 
 //! // Send a functional query synchronously in Little Endian encode (Post erroneous orders)
 //! // h (`post_order; `napolitan`ra_men)
-//! if let Err(err)=send_query_le(&mut handle, QGEN::new_mixed_list(vec![QGEN::new_symbol("post_order"), QGEN::new_symbol_list(Attribute::None, vec!["napolitan", "ra_men"])])).await{
-//!   // q Error - [ Execution of query failed: What!? napolitan, ra-men!? ]
+//! if let Err(err)=send_query_le(&mut handle, q_mixed_list![q_symbol!["post_order"], q_symbol_list!['*'; vec!["napolitan", "ra_men"]]]).await{
+//!   // q Error - [ Execution of query failed: What!? napolitan, ra_men!? ]
 //!   eprintln!("{}", err);
 //! }
 //! 
 //! // Build Q object (prepare an additional price list to suggest)
-//! let additional_menu=QGEN::new_dictionary(
-//!   QGEN::new_symbol_list(Attribute::None, vec!["eel", "gunkan", "salmon"]),
-//!   QGEN::new_long_list(Attribute::None, vec![120_i64, 110, 100])
-//! );
+//! let additional_menu=q_dictionary![
+//!   q_symbol_list!['*'; vec!["eel", "gunkan", "salmon"]];
+//!   q_long_list!['*'; vec![120_i64, 110, 100]]
+//! ];
 //! 
 //! // Send a functional query asynchronously in Little Endian encode (Update price table)
 //! // h (`upd; `price_table; additional_menu)
-//! send_query_async_le(&mut handle, QGEN::new_mixed_list(vec![QGEN::new_symbol("upd"), QGEN::new_symbol("price_table"), additional_menu])).await?;
+//! send_query_async_le(&mut handle, q_mixed_list![q_symbol!["upd"], q_symbol!["price_table"], additional_menu]]).await?;
 //! 
 //! // Send a functional query synchronously in Big Endian encode (Post orders)
 //! // h (`post_order; `salmon`eel`gunkan`tuna)
-//! let payment=send_query(&mut handle, QGEN::new_mixed_list(vec![QGEN::new_symbol("post_order"), QGEN::new_symbol_list(Attribute::None, vec!["salmon", "eel", "gunkan", "tuna"])])).await?;
+//! let payment=send_query_le(&mut handle, q_mixed_list![q_symbol!["post_order"], q_symbol_list!['*'; vec!["salmon", "eel", "gunkan", "tuna"]]]).await?;
 //! // Order total: 480j yen
 //! println!("Order total: {} yen", payment);
 //! ```

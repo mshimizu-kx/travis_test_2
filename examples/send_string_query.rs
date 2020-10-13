@@ -1,8 +1,8 @@
 // send_string_query.rs
 
 /*
-* This file demostrates examples of how to use a function to send a text query
-* and how to retrieve underlying value of q object.
+* This file demostrates how to use the function to send a text query
+* and how to retrieve an underlying value of q object.
 */
 
 use rustkdb::connection::*;
@@ -11,9 +11,12 @@ use std::io;
 
 #[tokio::main]
 async fn main() -> Result<(), io::Error>{
+
+  // Connect to q process with 1 second timeout and 200 milliseconds retry interval
   let mut handle=connect("localhost", 5000, "kdbuser:pass", 1000, 200).await.expect("Failed to connect");
 
-  // Set remote initializer function 'init'
+  // Set remote initializer function 'init' by an asynchronous message
+  // "_le" means Little Endian
   send_string_query_async_le(&mut handle, "init:{[] i:6; while[i-:1; -1 string[i], \"...\"; system \"sleep 1\"]; \"Done.\"}").await?;
 
   // Call 'init'
@@ -33,7 +36,8 @@ async fn main() -> Result<(), io::Error>{
     eprintln!("{}", e)
   }  
 
-  // Get compound olist of dictionary and table
+  // Get compound list of dictionary and table
+  // query is sent in Big Endian encode ("_be")
   let res_mixed_dict_table_null=send_string_query_be(&mut handle, "(`a`b`c!1 2 3; `d`e!100.12 113.433; ([] a:1 2; b:2020.03.12D03:15:00.987 2020.05.30D19:14:24.0100304); ::)").await?;
   assert_eq!(res_mixed_dict_table_null, QGEN::new_mixed_list(vec![
     QGEN::new_dictionary(QGEN::new_symbol_list(Attribute::None, vec!["a", "b", "c"]), QGEN::new_long_list(Attribute::None, vec![1_i64, 2, 3])), 
@@ -58,5 +62,9 @@ async fn main() -> Result<(), io::Error>{
   assert_eq!(key, QGEN::new_symbol_list(Attribute::None, vec!["d", "e"]));
   assert_eq!(value,  QGEN::new_float_list(Attribute::None, vec![100.12_f64, 113.433]));
 
-   Ok(())
+  if let Err(e)=send_string_query_le(&mut handle, "exit 0").await{
+    eprintln!("{}", e);
+  }
+
+  Ok(())
 }

@@ -12,10 +12,13 @@ use std::io;
 use std::fmt;
 use chrono::prelude::*;
 use chrono::Duration;
+use std::collections::HashMap;
 
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 //                        Macros                         //
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
+
+//%% Formatter %%//vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv/
 
 // Macro to write simple list with whitespace as a delimiter
 macro_rules! write_simple_qlist {
@@ -38,9 +41,1162 @@ macro_rules! write_enlist {
   };
 }
 
+//%% Constructor %%//vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv/
+
+/// Create q bool object from `bool`. Macro of [`QGEN::new_bool`](qtype/struct.QGEN.html#method.new_Gbool).
+/// # Examples
+/// ```
+/// use rustkdb::qtype::*;
+/// 
+/// // 1b
+/// let qbool=q_bool![true];
+/// ```
+#[macro_export]
+macro_rules! q_bool {
+  [$atom: expr] => {
+    QGEN::new_bool($atom)
+  };
+}
+
+/// Create q GUID object from `[u8; 16]`. Macro of [`QGEN::new_GUID`](qtype/struct.QGEN.html#method.new_GUID).
+/// # Example
+/// ```
+/// use rustkdb::qtype::*;
+/// 
+/// // 5ae7962d-49f2-404d-5aec-f7c8abbae288
+/// let qGUID=q_GUID![[0x5a, 0xe7, 0x96, 0x2d, 0x49, 0xf2, 0x40, 0x4d, 0x5a, 0xec, 0xf7, 0xc8, 0xab, 0xba, 0xe2, 0x88]];
+/// ```
+#[macro_export]
+macro_rules! q_GUID {
+  [$atom: expr] => {
+    QGEN::new_GUID($atom)
+  };
+}
+
+/// Create q byte object from `u8`. Macro of [`QGEN::new_byte`](qtype/struct.QGEN.html#method.new_byte).
+/// # Example
+/// ```
+/// use rustkdb::qtype::*;
+/// 
+/// // 0x3c
+/// let qbyte=q_byte![0x3c];
+/// ```
+#[macro_export]
+macro_rules! q_byte {
+  [$atom: expr] => {
+    QGEN::new_byte($atom)
+  };
+}
+
+/// Create q short object from `i16`. Macro of [`QGEN::new_short`](qtype/struct.QGEN.html#method.new_short).
+/// # Example
+/// ```
+/// use rustkdb::qtype::*;
+/// 
+/// // -128h
+/// let qshort=q_short![-128_i16];
+/// ```
+#[macro_export]
+macro_rules! q_short {
+  [$atom: expr] => {
+    QGEN::new_short($atom)
+  };
+}
+
+/// Create q int object from `i32`. Macro of [`QGEN::new_int`](qtype/struct.QGEN.html#method.new_int).
+/// # Example
+/// ```
+/// use rustkdb::qtype::*;
+/// 
+/// // 10392i
+/// let qint=q_int![10392];
+/// ```
+#[macro_export]
+macro_rules! q_int {
+  [$atom: expr] => {
+    QGEN::new_int($atom)
+  };
+}
+
+/// Create q long object from `i64`. Macro of [`QGEN::new_long`](qtype/struct.QGEN.html#method.new_long).
+/// # Example
+/// ```
+/// use rustkdb::qtype::*;
+/// 
+/// // 86400000000000
+/// let qlong=q_long![86400000000000_i64];
+/// ```
+#[macro_export]
+macro_rules! q_long {
+  [$atom: expr] => {
+    QGEN::new_long($atom)
+  };
+}
+
+/// Create q real object from `f32`. Macro of [`QGEN::new_real`](qtype/struct.QGEN.html#method.new_real).
+/// # Example
+/// ```
+/// use rustkdb::qtype::*;
+/// 
+/// // 12.34e
+/// let qreal=q_real![12.34_f32];
+/// ```
+#[macro_export]
+macro_rules! q_real {
+  [$atom: expr] => {
+    QGEN::new_real($atom)
+  };
+}
+
+/// Create q float object from `f64`. Macro of [`QGEN::new_float`](qtype/struct.QGEN.html#method.new_float).
+/// # Example
+/// ```
+/// use rustkdb::qtype::*;
+/// 
+/// // -10957.5
+/// let qfloat=q_float![-10957.5];
+/// ```
+#[macro_export]
+macro_rules! q_float {
+  [$atom: expr] => {
+    QGEN::new_float($atom)
+  };
+}
+
+/// Create q char object from `char`. Macro of [`QGEN::new_char`](qtype/struct.QGEN.html#method.new_char).
+/// # Example
+/// ```
+/// use rustkdb::qtype::*;
+/// 
+/// // "Q"
+/// let qchar=q_char!['Q'];
+/// ```
+#[macro_export]
+macro_rules! q_char {
+  [$atom: expr] => {
+    QGEN::new_char($atom)
+  };
+}
+
+/// Create q symbol object. Macro of [`QGEN::new_symbol`](qtype/struct.QGEN.html#method.new_symbol).
+/// # Example
+/// ```
+/// use rustkdb::qtype::*;
+/// 
+/// // `KxSystems
+/// let qsymbol=q_symbol!["KxSystems"];
+/// let qsymbol2=q_symbol![String::from("KxSystems")];
+/// assert_eq!(qsymbol, qsymbol2);
+/// ```
+#[macro_export]
+macro_rules! q_symbol {
+  [$atom: expr] => {
+    QGEN::new_symbol($atom)
+  };
+}
+
+/// Create q timestamp object. Macro of following constructors:
+/// - [`QGEN::new_timestamp`](qtype/struct.QGEN.html#method.new_timestamp)
+/// - [`QGEN::new_timestamp_nanos`](qtype/struct.QGEN.html#method.new_timestamp_nanos)
+/// - [`QGEN::new_timestamp_ymd_hms_nanos`](qtype/struct.QGEN.html#method.new_timestamp_ymd_hms_nanos)
+/// # Parameters
+/// - `DateTime<Utc>` for `"datetime"`
+/// - Nanoseconds since `1970-01-01`(`i64`) for `"nanos"`
+/// - Year(`i32`), month(`u32`), day(`u32`), hour(`u32`), month(`u32`), second(`u32`), nanosecond(`u32`) for `"ymd_hms_nanos"`
+/// # Example
+/// ```
+/// #[macro_use]
+/// extern crate rustkdb
+/// 
+/// use rustkdb::qtype::*;
+/// use rustkdb::connection::*;
+/// use chrono:prelude::*;
+/// 
+/// // Get q timestamp
+/// let qtimestamp=send_string_query_le(&mut handle, "2011.12.19D19:40:12.000001384").await?;
+/// 
+/// // Build timestamp
+/// let qtimestamp2=q_timestamp!["datetime"; Utc.ymd(2011, 12, 19).and_hms_nano(19, 40, 12, 1384)];
+/// let qtimestamp3=q_timestamp!["nanos"; 377638812000001384_i64 + KDB_TIMESTAMP_OFFSET];
+/// let qtimestamp4=q_timestamp!["ymd_hms_nanos"; 2011, 12, 19, 19, 40, 12, 1384];
+///
+/// assert_eq!(qtimestamp, qtimestamp2);
+/// assert_eq!(qtimestamp, qtimestamp3);
+/// assert_eq!(qtimestamp, qtimestamp4);
+/// ```
+#[macro_export]
+macro_rules! q_timestamp {
+  ["datetime"; $atom: expr] => {
+    QGEN::new_timestamp($atom)
+  };
+  ["nanos"; $atom: expr] => {
+    QGEN::new_timestamp_nanos($atom)
+  };
+  ["ymd_hms_nanos"; $y: expr, $m: expr, $d: expr, $H: expr, $M: expr, $S: expr, $N: expr] => {
+    QGEN::new_timestamp_ymd_hms_nanos($y, $m, $d, $H, $M, $S, $N)
+  };
+}
+
+/// Create q month object. Macro of following constructors:
+/// - [`QGEN::new_month`](qtype/struct.QGEN.html#method.new_month)
+/// - [`QGEN::new_month_ym`](qtype/struct.QGEN.html#method.new_month_ym)
+/// # Parameters
+/// - `Date<Utc>` for `"date"`
+/// - `Year(i32`), month(`u32`) for `"ym"`
+/// # Example
+/// ```
+/// use rustkdb::qtype::*;
+/// use chrono::prelude::*;
+/// 
+/// // 2000.01m
+/// let qmonth=q_month![Utc.ymd(2000, 1, 3)];
+/// let qmonth2=q_month![2000, 1];
+/// assert_eq!(qmonth, qmonth2);
+/// ```
+#[macro_export]
+macro_rules! q_month {
+  [$atom: expr] => {
+    QGEN::new_month($atom)
+  };
+  [$y: expr, $m: expr] => {
+    QGEN::new_month_ym($y, $m)
+  };
+}
+
+/// Create q date object. Macro of following constructors:
+/// - [`QGEN::new_date`](qtype/struct.QGEN.html#method.new_date)
+/// - [`QGEN::new_date_ymd`](qtype/struct.QGEN.html#method.new_date_ymd)
+/// # Parameters
+/// - `Date<Utc>` for `"date"`
+/// - Year(`i32`), month(`u32`), day(`u32`) for `"ymd"`
+/// # Example
+/// ```
+/// use rustkdb::qtype::*;
+/// use chrono::prelude::*;
+/// 
+/// // 2012.03.16
+/// let qdate=q_date![Utc.ymd(2012, 3, 16)];
+/// let qdate2=q_date![2012, 3, 16];
+/// assert_eq!(qdate, qdate2);
+/// ```
+#[macro_export]
+macro_rules! q_date {
+  ($atom: expr) => {
+    QGEN::new_date($atom)
+  };
+  ($y: expr, $m: expr, $d: expr) => {
+    QGEN::new_date_ymd($y, $m, $d)
+  };
+}
+
+/// Create q datetime. Macro of following constructors:
+/// - [`QGEN::new_datetime`](qtype/struct.QGEN.html#method.new_datetime)
+/// - [`QGEN::new_datetime_millis`](qtype/struct.QGEN.html#method.new_datetime_millis)
+/// - [`QGEN::new_datetime_ymd_hms_millis`](qtype/struct.QGEN.html#method.new_datetime_ymd_hms_millis)
+/// # Parameters
+/// - `chrono::DateTime<Utc>` for `"datetime"`
+/// - Milliseconds since `1970-01-01`(`i64`) for `"millis"`
+/// - Year(`i32`), month(`u32`), day(`u32`), hour(`u32`), month(`u32`), second(`u32`), millisecond(`u32`) for `"ymd_hms_millis"`
+/// # Example
+/// ```
+/// use rustkdb::qtype::*;
+/// use chrono::prelude::*;
+/// 
+/// // 2008.02.01T02:31:25.828
+/// let qdatetime=q_datetime!["datetime"; Utc.ymd(2008, 2, 1).and_hms_milli(2, 31, 425, 828)];
+/// let qdatetime2=q_datetime!["millis"; (KDB_DAY_OFFSET * ONE_DAY_MILLIS) + 255148285828_i64]
+/// let qdatetime3=q_datetime!["ymd_hms_millis"; 2008, 2, 1, 2, 31, 25, 828];
+/// assert_eq!(qdatetime, qdatetime2);
+/// assert_eq!(qdatetime, qdatetime3);
+/// ```
+#[macro_export]
+macro_rules! q_datetime {
+  ["datetime"; $atom: expr] => {
+    QGEN::new_datetime($atom)
+  };
+  ["millis"; $atom: expr] => {
+    QGEN::new_datetime_millis($atom)
+  };
+  ["ymd_hms_millis"; $y: expr, $m: expr, $d: expr, $H: expr, $M: expr, $S: expr, $millis: expr] => {
+    QGEN::new_datetime_ymd_hms_millis($y, $m, $d, $H, $M, $S, $millis)
+  };
+}
+
+/// Create q timespan object. Macro of following constructors:
+/// - [`QGEN::new_timespan`](qtype/struct.QGEN.html#method.new_timespan)
+/// - [`QGEN::new_timespan_millis`](qtype/struct.QGEN.html#method.new_timespan_millis)
+/// - [`QGEN::new_timespan_nanos`](qtype/struct.QGEN.html#method.new_timespan_nanos)
+/// # Parameters
+/// - `chrono::Duraition` for `"duration"`
+/// - `i64` for `"millis"` and `"nanos"`
+/// # Example
+/// ```
+/// use rustkdb::qtype::*;
+/// use chrono::Duration;
+/// 
+/// // 1D
+/// let qtimespan=q_timespan!["duration"; Duration::days(1_i64)];
+/// let qtimespan2=q_timespan!["millis"; 86400000_i64];
+/// let qtimespan3=q_timespan!["nanos"; 86400000000000_i64];
+/// assert_eq!(qtimespan, qtimespan2);
+/// assert_eq!(qtimespan, qtimespan3);
+/// ```
+#[macro_export]
+macro_rules! q_timespan {
+  ["duration"; $atom: expr] => {
+    QGEN::new_timespan($atom)
+  };
+  ["millis"; $atom: expr] => {
+    QGEN::new_timespan_millis($atom)
+  };
+  ["nanos"; $atom: expr] => {
+    QGEN::new_timespan_nanos($atom)
+  };
+}
+
+/// Create q minute object. Macro of following constructors:
+/// - [`QGEN::new_minute`](qtype/struct.QGEN.html#method.new_minute)
+/// - [`QGEN::new_minute_naivetime`](qtype/struct.QGEN.html#method.new_minute_naive)
+/// - [`QGEN::new_minute_hm`](qtype/struct.QGEN.html#method.new_minute_hm)
+/// - [`QGEN::new_minute_min`](qtype/struct.QGEN.html#method.new_minute_min)
+/// # Parameters
+/// - `QTime` for `"qtime"`
+/// - `chrono::NaiveTime` for `"naivetime"`
+/// - Hour(`u32`), minute(`u32`) for `"hm"`
+/// - Minutes since `00:00:00`(`i32`) for `"min"`
+/// # Example
+/// ```
+/// use rustkdb::qtype::*;
+/// use chrono::NaiveTime;
+/// 
+/// // 13:04
+/// // Second is ignored
+/// let qminute=q_minute!["qtime"; QTimeGEN::new_minute(NaiveTime::from_hms(13, 4, 50))];
+/// 
+/// // Second is ignored
+/// let qminute2=q_minute!["naivetime"; NaiveTime::from_hms(13, 4, 30)];
+/// 
+/// let qminute3=q_minute!["hm"; 13, 4];
+/// 
+/// // 24:00 is supressed to 00:00
+/// let qminute4=q_minute!["min"; 784];
+/// 
+/// assert_eq!(qminute, qminute2);
+/// assert_eq!(qminute, qminute3);
+/// assert_eq!(qminute, qminute4);
+/// ```
+#[macro_export]
+macro_rules! q_minute {
+  ["qtime"; $atom: expr] => {
+    QGEN::new_minute($atom)
+  };
+  ["naivetime"; $atom: expr] => {
+    QGEN::new_minute_naive($atom)
+  };
+  ["hm"; $H: expr, $M: expr] => {
+    QGEN::new_minute_hm($H, $M)
+  };
+  ["min"; $atom: expr] => {
+    QGEN::new_minute_min($atom)
+  };
+}
+
+/// Create q second object. Macro of following constructors:
+/// - [`QGEN::new_second`](qtype/struct.QGEN.html#method.new_second)
+/// - [`QGEN::new_second_naivetime`](qtype/struct.QGEN.html#method.new_second_naive)
+/// - [`QGEN::new_second_hms`](qtype/struct.QGEN.html#method.new_second_hms)
+/// - [`QGEN::new_second_sec`](qtype/struct.QGEN.html#method.new_second_sec)
+/// # Parameters
+/// - `QTime` for `"qtime"`
+/// - `chrono::NaiveTime` for `"naivetime"`
+/// - Hour(`u32`), minute(`u32`), second(`u32`) for `"hms"`
+/// - Seconds since `00:00:00`(`i32`) for `"sec"`
+/// # Example
+/// ```
+/// use rustkdb::qtype::*;
+/// use chrono::NaiveTime;
+/// 
+/// // 08:10:02
+/// // Millisecond is ignored
+/// let qsecond=q_second!["qtime"; QTimeGEN::new_second(NaiveTime::from_hms_milli(8, 10, 2, 325))];
+/// 
+/// // Millisecond is ignored
+/// let qsecond2=q_second!["naivetime"; NaiveTime::from_hms_milli(8, 10, 2, 325)];
+/// 
+/// let qsecond3=q_second!["hms"; 8, 10, 2];
+/// 
+/// // 48:00:00 is supressed to 00:00:00
+/// let qsecond4=q_second!["sec"; 202202];
+/// 
+/// assert_eq!(qsecond, qsecond2);
+/// assert_eq!(qsecond, qsecond3);
+/// assert_eq!(qsecond, qsecond4);
+/// ```
+#[macro_export]
+macro_rules! q_second {
+  ["qtime"; $atom: expr] => {
+    QGEN::new_second($atom)
+  };
+  ["naivetime"; $atom: expr] => {
+    QGEN::new_second_naive($atom)
+  };
+  ["hms"; $H: expr, $M: expr, $S: expr] => {
+    QGEN::new_second_hms($H, $M, $S)
+  };
+  ["sec"; $atom: expr] => {
+    QGEN::new_second_sec($atom)
+  };
+}
+
+/// Create q time object. Macro of following constructors:
+/// - [`QGEN::new_time`](qtype/struct.QGEN.html#method.new_time)
+/// - [`QGEN::new_time_naive`](qtype/struct.QGEN.html#method.new_time_naive)
+/// - [`QGEN::new_time_hms_millis`](qtype/struct.QGEN.html#method.new_time_hms_millis)
+/// - [`QGEN::new_time_millis`](qtype/struct.QGEN.html#method.new_time_millis)
+/// # Parameters
+/// - `QTime` for `"qtime"`
+/// - `chrono::NaiveTime` for `"naivetime"`
+/// - `Hour(`u32`), minute(`u32`), second(`u32`), millisecond(`u32`) for `"hms_millis"`
+/// - Milliseconds since `00:00:00000`(`i32`) for `"millis"`
+/// # Example
+/// ```
+/// use rustkdb::qtype::*;
+/// use chrono::NaiveTime;
+/// 
+/// // 20:23:25.800
+/// // Precision under millisecond is ignored
+/// let qtime=q_time!["qtime"; QTimeGEN::new_time(NaiveTime::from_hms_nano(20, 23, 25, 800123456))];
+/// 
+/// // Precision under millisecond is ignored
+/// let qtime2=q_time!["naivetime"; NaiveTime::from_hms_nano(20, 23, 25, 800123456)];
+/// 
+/// let qtime3=q_time!["hms_millis"; 20, 23, 25, 800];
+/// 
+/// // 24:00:00 is supressed to 00:00:00.000
+/// let qtime4=q_time!["millis"; 159805800];
+/// 
+/// assert_eq!(qtime, qtime2);
+/// assert_eq!(qtime, qtime3);
+/// assert_eq!(qtime, qtime4);
+/// ```
+#[macro_export]
+macro_rules! q_time {
+  ["qtime"; $atom: expr] => {
+    QGEN::new_time($atom)
+  };
+  ["naivetime"; $atom: expr] => {
+    QGEN::new_time_naive($atom)
+  };
+  ["hms_millis"; $H: expr, $M: expr, $S: expr, $millis: expr] => {
+    QGEN::new_time_hms_millis($H, $M, $S, $millis)
+  };
+  ["millis"; $millis: expr] => {
+    QGEN::new_time_millis($millis)
+  };
+}
+
+/// Create q bool list object from `Vec<bool>`. Macro of [`QGEN::new_bool_list`](qtype/struct.QGEN.html#method.new_bool_list).
+/// # Parameters
+/// - `attribute`: Attribute of q list.
+///   - `'*'`: None
+///   - `'s'`: Sorted attribute
+///   - `'p'`: Parted attribute
+///   - `'u'`: Unique attribute
+///   - `'g'`: Grouped attribute
+/// - `list`: vector of `bool`.
+/// # Example
+/// ```
+/// #[macro_use]
+/// extern crate rustkdb
+/// 
+/// use rustkdb::qtype::*;
+/// 
+/// // Build q bool list with parted attribute
+/// let qbool_list=q_bool_list!['p'; vec![true, true, false]];
+/// ```
+#[macro_export]
+macro_rules! q_bool_list {
+  [$attribute: expr; $list: expr] => {
+    QGEN::new_bool_list(CHAR_TO_ATTR[&$attribute], $list)
+  };
+}
+
+/// Create q GUID list object from `Vec<[u8; 16]>`. Macro of [`QGEN::new_GUID_list`](qtype/struct.QGEN.html#method.new_GUID_list).
+/// # Parameters
+/// - `attribute`: Attribute of q list.
+///   - `'*'`: None
+///   - `'s'`: Sorted attribute
+///   - `'p'`: Parted attribute
+///   - `'u'`: Unique attribute
+///   - `'g'`: Grouped attribute
+/// - `list`: vector of `[u8;16]`.
+/// # Example
+/// ```
+/// use rustkdb::qtype::*;
+/// 
+/// // 8c6b8b64-6815-6084-0a3e-178401251b68 5ae7962d-49f2-404d-5aec-f7c8abbae288
+/// let qGUID_list=q_GUID_list!['*'; vec![[0x8c, 0x6b, 0x8b, 0x64, 0x68, 0x15, 0x60, 0x84, 0x0a, 0x3e, 0x17, 0x84, 0x01, 0x25, 0x1b, 0x68], [0x5a, 0xe7, 0x96, 0x2d, 0x49, 0xf2, 0x40, 0x4d, 0x5a, 0xec, 0xf7, 0xc8, 0xab, 0xba, 0xe2, 0x88]]];
+/// ```
+#[macro_export]
+macro_rules! q_GUID_list {
+  [$attribute: expr; $list: expr] => {
+    QGEN::new_GUID_list(CHAR_TO_ATTR[&$attribute], $list)
+  };
+}
+
+/// Create q byte list object from `Vec<u8>`. Macro of [`QGEN::new_byte_list`](qtype/struct.QGEN.html#method.new_byte_list).
+/// # Parameters
+/// - `attribute`: Attribute of q list.
+///   - `'*'`: None
+///   - `'s'`: Sorted attribute
+///   - `'p'`: Parted attribute
+///   - `'u'`: Unique attribute
+///   - `'g'`: Grouped attribute
+/// - `list`: vector of `u8`.
+/// # Example
+/// ```
+/// use rustkdb::qtype::*;
+/// 
+/// // 0x4b7853797374656d73
+/// let qbyte_list=q_byte_list!['*'; vec![0x4b, 0x78, 0x53, 0x79, 0x73, 0x74, 0x65, 0x6d, 0x73]]; 
+/// ```
+#[macro_export]
+macro_rules! q_byte_list {
+  [$attribute: expr; $list: expr] => {
+    QGEN::new_byte_list(CHAR_TO_ATTR[&$attribute], $list)
+  };
+}
+
+/// Create q short list object from `Vec<i16>`. Macro of [`QGEN::new_short_list`](qtype/struct.QGEN.html#method.new_short_list).
+/// # Parameters
+/// - `attribute`: Attribute of q list.
+///   - `'*'`: None
+///   - `'s'`: Sorted attribute
+///   - `'p'`: Parted attribute
+///   - `'u'`: Unique attribute
+///   - `'g'`: Grouped attribute
+/// - `list`: vector of `i16`.
+/// # Example
+/// ```
+/// use rustkdb::qtype::*;
+/// 
+/// // 10 -30 20h
+/// let qshort_list=q_short_list!['*'; vec![10_i16, -30, 20]];
+/// ```
+#[macro_export]
+macro_rules! q_short_list {
+  [$attribute: expr; $list: expr] => {
+    QGEN::new_short_list(CHAR_TO_ATTR[&$attribute], $list)
+  };
+}
+
+/// Create q int list object from `Vec<i32>`. Macro of [`QGEN::new_int_list`](qtype/struct.QGEN.html#method.new_int_list).
+/// # Parameters
+/// - `attribute`: Attribute of q list.
+///   - `'*'`: None
+///   - `'s'`: Sorted attribute
+///   - `'p'`: Parted attribute
+///   - `'u'`: Unique attribute
+///   - `'g'`: Grouped attribute
+/// - `list`: vector of `i32`.
+/// # Example
+/// ```
+/// use rustkdb::qtype::*;
+/// 
+/// // `s#-3429000 120000
+/// let qint_list=q_int_list!['s'; vec![-3429000, 120000]];
+/// ```
+#[macro_export]
+macro_rules! q_int_list {
+  [$attribute: expr; $list: expr] => {
+    QGEN::new_int_list(CHAR_TO_ATTR[&$attribute], $list)
+  };
+}
+
+/// Create q long list object from `Vec<i64>`. Macro of [`QGEN::new_long_list`](qtype/struct.QGEN.html#method.new_long_list).
+/// # Parameters
+/// - `attribute`: Attribute of q list.
+///   - `'*'`: None
+///   - `'s'`: Sorted attribute
+///   - `'p'`: Parted attribute
+///   - `'u'`: Unique attribute
+///   - `'g'`: Grouped attribute
+/// - `list`: vector of `i64`.
+/// # Example
+/// ```
+/// use rustkdb::qtype::*;
+/// 
+/// // enlist 42
+/// let qlong_list=q_long_list!['*'; vec![42_i64]];
+/// ```
+#[macro_export]
+macro_rules! q_long_list {
+  [$attribute: expr; $list: expr] => {
+    QGEN::new_long_list(CHAR_TO_ATTR[&$attribute], $list)
+  };
+}
+
+/// Create q real list object from `Vec<f32>`. Macro of [`QGEN::new_real_list`](qtype/struct.QGEN.html#method.new_real_list).
+/// # Parameters
+/// - `attribute`: Attribute of q list.
+///   - `'*'`: None
+///   - `'s'`: Sorted attribute
+///   - `'p'`: Parted attribute
+///   - `'u'`: Unique attribute
+///   - `'g'`: Grouped attribute
+/// - `list`: vector of `f32`.
+/// # Example
+/// ```
+/// use rustkdb::qtype::*;
+/// 
+/// // 0.940909 0W 2039.30499e
+/// let qreal_list=q_real_list!['*'; vec![0.940909_f32, Q_0We, 2039.30499]];
+/// ```
+#[macro_export]
+macro_rules! q_real_list {
+  [$attribute: expr; $list: expr] => {
+    QGEN::new_real_list(CHAR_TO_ATTR[&$attribute], $list)
+  };
+}
+
+/// Create q float list object from `Vec<f64>`. Macro of [`QGEN::new_float_list`](qtype/struct.QGEN.html#method.new_float_list).
+/// # Parameters
+/// - `attribute`: Attribute of q list.
+///   - `'*'`: None
+///   - `'s'`: Sorted attribute
+///   - `'p'`: Parted attribute
+///   - `'u'`: Unique attribute
+///   - `'g'`: Grouped attribute
+/// - `list`: vector of `f64`.
+/// # Example
+/// ```
+/// use rustkdb::qtype::*;
+/// 
+/// // -0.9 -0w 1.0 -1.1 1.2 0n
+/// let qfloat_list=q_float_list!['*'; vec![-0.9 Q_NEG_0w, 1.0, -1.1, 1.2, Q_0n]];
+/// ```
+#[macro_export]
+macro_rules! q_float_list {
+  [$attribute: expr; $list: expr] => {
+    QGEN::new_float_list(CHAR_TO_ATTR[&$attribute], $list)
+  };
+}
+
+/// Create q string object from `&str` or `String`. Macro of [`QGEN::new_char_list`](qtype/struct.QGEN.html#method.new_char_list).
+/// # Parameters
+/// - `attribute`: Attribute of q list.
+///   - `'*'`: None
+///   - `'s'`: Sorted attribute
+///   - `'p'`: Parted attribute
+///   - `'u'`: Unique attribute
+///   - `'g'`: Grouped attribute
+/// - `list`: `&str` or `String`
+/// # Example
+/// ```
+/// use rustkdb::qtype::*;
+/// 
+/// // `u#"Joshua"
+/// let qchar_list=q_char_list!['u'; "Joshua"];
+/// ```
+#[macro_export]
+macro_rules! q_string {
+  [$attribute: expr; $list: expr] => {
+    QGEN::new_char_list(CHAR_TO_ATTR[&$attribute], $list)
+  };
+}
+
+/// Create q symbol list object from `Vec<&str>` or `Vec<String>`. Macro of [`QGEN::new_symbol_list`](qtype/struct.QGEN.html#method.new_symbol_list).
+/// # Parameters
+/// - `attribute`: Attribute of q list.
+///   - `'*'`: None
+///   - `'s'`: Sorted attribute
+///   - `'p'`: Parted attribute
+///   - `'u'`: Unique attribute
+///   - `'g'`: Grouped attribute
+/// - `list`: vector of `&str` or `String`
+/// # Example
+/// ```
+/// use rustkdb::qtype::*;
+/// 
+/// // `u#`Last`Derivatives
+/// let qsymbol_list=q_symbol_list!['u'; vec![String::from("Last"), String::from("Derivatives")]];
+/// ```
+#[macro_export]
+macro_rules! q_symbol_list {
+  [$attribute: expr; $list: expr] => {
+    QGEN::new_symbol_list(CHAR_TO_ATTR[&$attribute], $list)
+  };
+}
+
+/// Create q timestamp list object. Macro of following constructors:
+/// - [`QGEN::new_timestamp_list`](qtype/struct.QGEN.html#method.new_timestamp_list)
+/// - [`QGEN::new_timestamp_list_nanos`](qtype/struct.QGEN.html#method.new_timestamp_list_nanos)
+/// - [`QGEN::new_timestamp_list_ymd_hms_nanos`](qtype/struct.QGEN.html#method.new_timestamp_list_ymd_hms_nanos)
+/// # Parameters
+/// - `attribute`: Attribute of q list.
+///   - `'*'`: None
+///   - `'s'`: Sorted attribute
+///   - `'p'`: Parted attribute
+///   - `'u'`: Unique attribute
+///   - `'g'`: Grouped attribute
+/// - `list`: vector of:
+///   - `DateTime<Utc>` for `"datetime"`
+///   - Nanoseconds since `1970-01-01`(`i64`) for `"nanos"`
+///   - tuple of (Year(`i32`), month(`u32`), day(`u32`), hour(`u32`), month(`u32`), second(`u32`), nanosecond(`u32`)) for `"ymd_hms_nanos"`
+/// # Example
+/// ```
+/// use rustkdb::qtype::*;
+/// 
+/// // 2009.02.18D00:00:03.000000115 2000.02.19D02:14:00.000009023
+/// let qtimestamp_list=q_timestamp_list!["datetime"; '*'; vec![Utc.ymd(2009, 2, 18).and_hms_nano(0, 0, 3, 115), Utc.ymd(2009, 2, 19).and_hms_nano(2, 14, 0, 9023)]];
+/// let qtimestamp_list2=q_timestamp_list!["nanos"; '*'; vec![288230403000000115_i64 + KDB_TIMESTAMP_OFFSET, 4241640000009023_i64 + KDB_TIMESTAMP_OFFSET]];
+/// let qtimestamp_list3=q_timestamp_list!["ymd_hms_nanos"; '*'; vec![(2009, 2, 18, 0, 0, 3, 115), (2002, 2, 19, 2, 14, 0, 9023)]];
+/// 
+/// assert_eq!(qtimestamp_list, qtimestamp_list2);
+/// assert_eq!(qtimestamp_list, qtimestamp_list3);
+/// ```
+#[macro_export]
+macro_rules! q_timestamp_list {
+  ["datetime"; $attribute: expr; $list: expr] => {
+    QGEN::new_timestamp_list(CHAR_TO_ATTR[&$attribute], $list)
+  };
+  ["nanos"; $attribute: expr; $list: expr] => {
+    QGEN::new_timestamp_list_nanos(CHAR_TO_ATTR[&$attribute], $list)
+  };
+  ["ymd_hms_nanos"; $attribute: expr; $list: expr] => {
+    QGEN::new_timestamp_list_ymd_hms_nanos(CHAR_TO_ATTR[&$attribute], $list)
+  };
+}
+
+/// Create q month list object. Macro of following constructors:
+/// - [`QGEN::new_month_list`](qtype/struct.QGEN.html#method.new_month_list)
+/// - [`QGEN::new_month_list_ym`](qtype/struct.QGEN.html#method.new_month_list_ym)
+/// # Parameters
+/// - `attribute`: Attribute of q list.
+///   - `'*'`: None
+///   - `'s'`: Sorted attribute
+///   - `'p'`: Parted attribute
+///   - `'u'`: Unique attribute
+///   - `'g'`: Grouped attribute
+/// - `list`: vector of:
+///   - `Date<Utc>` for `"date"`
+///   - tuple of (year(`i32`), month(`u32`)) for `"ym"`
+/// # Example
+/// ```
+/// use rustkdb::qtype::*;
+/// use chrono::prelude::*;
+/// 
+/// // 2012.07 2015.10 0N 2018.04m
+/// let qmonth_list=q_month_list!["date"; '*'; vec![Utc.ymd(2012, 7, 1), Utc.ymd(2015, 10, 1), Q_0Nm, Utc.ymd(2018, 4, 1)]];
+/// 
+/// // 2004.12 2009.07 2000.3m
+/// let qmonth_list2=q_month_list!["ym"; '*'; vec![(2004, 12), (2009, 7), (2000, 3)]];
+/// ```
+#[macro_export]
+macro_rules! q_month_list {
+  ["date"; $attribute: expr; $list: expr] => {
+    QGEN::new_month_list(CHAR_TO_ATTR[&$attribute], $list)
+  };
+  ["ym"; $attribute: expr; $list: expr] => {
+    QGEN::new_month_list_ym(CHAR_TO_ATTR[&$attribute], $list)
+  };
+}
+
+/// Create q date list object. Macro of following constructors:
+/// - [`QGEN::new_date_list`](qtype/struct.QGEN.html#method.new_date_list)
+/// - [`QGEN::new_date_list_ymd`](qtype/struct.QGEN.html#method.new_date_list_ymd)
+/// # Parameters
+/// - `attribute`: Attribute of q list.
+///   - `'*'`: None
+///   - `'s'`: Sorted attribute
+///   - `'p'`: Parted attribute
+///   - `'u'`: Unique attribute
+///   - `'g'`: Grouped attribute
+/// - `list`: vector of:
+///   - `Date<Utc>` for `"date"`
+///   - tuple of (year(`i32`), month(`u32`), day(`u32`)) for `"ymd"`
+/// # Example
+/// ```
+/// use rustkdb::qtype::*;
+/// use chrono::prelude::*;
+/// 
+/// // 2005.01.05 2008.03.31
+/// let qdate_list=q_date_list!["date"; '*'; vec![Utc.ymd(2005, 1, 5), Utc.ymd(2008, 3, 31)]];
+/// let qdate_list2=q_date_list!["ymd"; '*'; vec![(2005, 1, 5), (2008, 3, 31)]];
+/// 
+/// assert_eq!(qdate_list, qdate_list2);
+/// ```
+#[macro_export]
+macro_rules! q_date_list {
+  ["date"; $attribute: expr; $list: expr] => {
+    QGEN::new_date_list(CHAR_TO_ATTR[&$attribute], $list)
+  };
+  ["ymd"; $attribute: expr; $list: expr] => {
+    QGEN::new_date_list_ymd(CHAR_TO_ATTR[&$attribute], $list)
+  };
+}
+
+/// Create q datetime list object. Macro of following constructors:
+/// - [`QGEN::new_datetime_list`](qtype/struct.QGEN.html#method.new_datetime_list)
+/// - [`QGEN::new_datetime_list_millis`](qtype/struct.QGEN.html#method.new_datetime_list_millis)
+/// - [`QGEN::new_datetime_list_ymd_hms_millis`](qtype/struct.QGEN.html#method.new_datetime_list_ymd_hms_millis)
+/// # Parameters
+/// - `attribute`: Attribute of q list.
+///   - `'*'`: None
+///   - `'s'`: Sorted attribute
+///   - `'p'`: Parted attribute
+///   - `'u'`: Unique attribute
+///   - `'g'`: Grouped attribute
+/// - `list`: vector of:
+///   - `chrono::DateTime<Utc>` for `"datetime"`
+///   - Milliseconds since `1970-01-01`(`i64`) for `"millis"`
+///   - tuple of (year(`i32`), month(`u32`), day(`u32`), hour(`u32`), month(`u32`), second(`u32`), millisecond(`u32`)) for `"ymd_hms_millis"`
+/// # Example
+/// ```
+/// use rustkdb::qtype::*;
+/// use chrono::prelude::*;
+/// 
+/// // 2018.04.18T02:20:23.290 2009.02.03T23:34:34.878z
+/// let qdatetime_list=q_datetime_list!["datetime"; '*'; vec![Utc.ymd(2018, 4, 18).and_hms_milli(2, 20, 23, 290), Utc.ymd(2009, 2, 13).and_hms_milli(23, 34, 34, 878)]];
+/// let qdatetime_list2=q_datetime_list!["millis"; '*'; vec![577333223290_i64 + KDB_TIMESTAMP_OFFSET, 287019274878_i64 + KDB_TIMESTAMP_OFFSET]];
+/// let qdatetime_list3=q_datetime_list!["ymd_hms_millis"; '*'; vec![(2018, 4, 18, 2, 20, 23, 290), (2009, 2, 13, 23, 34, 34, 878)]];
+/// 
+/// assert_eq!(qdatetime_list, qdatetime_list2);
+/// assert_eq!(qdatetime_list, qdatetime_list3);
+/// ```
+#[macro_export]
+macro_rules! q_datetime_list {
+  ["datetime"; $attribute: expr; $list: expr] => {
+    QGEN::new_datetime_list(CHAR_TO_ATTR[&$attribute], $list)
+  };
+  ["millis"; $attribute: expr; $list: expr] => {
+    QGEN::new_datetime_list_millis(CHAR_TO_ATTR[&$attribute], $list)
+  };
+  ["ymd_hms_millis"; $attribute: expr; $list: expr] => {
+    QGEN::new_datetime_list_ymd_hms_millis(CHAR_TO_ATTR[&$attribute], $list)
+  };
+}
+
+/// Create q timespan list object. Macro of following constructors:
+/// - [`QGEN::new_timespan_list`](qtype/struct.QGEN.html#method.new_timespan_list)
+/// - [`QGEN::new_timespan_list_millis`](qtype/struct.QGEN.html#method.new_timespan_list_millis)
+/// - [`QGEN::new_timespan_list_nanos`](qtype/struct.QGEN.html#method.new_timespan_list_nanos)
+/// # Parameters
+/// - `attribute`: Attribute of q list.
+///   - `'*'`: None
+///   - `'s'`: Sorted attribute
+///   - `'p'`: Parted attribute
+///   - `'u'`: Unique attribute
+///   - `'g'`: Grouped attribute
+/// - `list`: vector of:
+///   - `chrono::Duraition` for `"duration"`
+///   - `i64` for `"millis"` and `"nanos"`
+/// # Example
+/// ```
+/// use rustkdb::qtype::*;
+/// use chrono::Duration;
+/// 
+/// // 1D 2D00:00:00.000000001 -0Wn
+/// let qtimespan_list=q_timespan_list!["duration"; '*'; vec![Duration::days(1), Duration::nanoseconds(1 + 2 * ONE_DAY_NANOS), Q_NEG_0Wn]];
+/// 
+/// // 2D03:00:01.365 3D03:00:04.837
+/// let qtimespan_list2=q_timespan_list!["millis"; '*'; vec![18360136_i64, 270004837]];
+/// let qtimespan_list3=q_timespan_list!["nanos"; '*'; vec![18360136000000_i64, 270004837000000]];
+/// 
+/// assert_eq!(qtimespan_list2, qtimespan_list3);
+/// ```
+#[macro_export]
+macro_rules! q_timespan_list {
+  ["duration"; $attribute: expr; $list: expr] => {
+    QGEN::new_timespan_list(CHAR_TO_ATTR[&$attribute], $list)
+  };
+  ["millis"; $attribute: expr; $list: expr] => {
+    QGEN::new_timespan_list_millis(CHAR_TO_ATTR[&$attribute], $list)
+  };
+  ["nanos"; $attribute: expr; $list: expr] => {
+    QGEN::new_timespan_list_nanos(CHAR_TO_ATTR[&$attribute], $list)
+  };
+}
+
+/// Create q minute list object. Macro of following constructors:
+/// - [`QGEN::new_minute_list`](qtype/struct.QGEN.html#method.new_minute_list)
+/// - [`QGEN::new_minute_list_naive`](qtype/struct.QGEN.html#method.new_minute_list_naive)
+/// - [`QGEN::new_minute_list_hm`](qtype/struct.QGEN.html#method.new_minute_list_hm)
+/// - [`QGEN::new_minute_list_min`](qtype/struct.QGEN.html#method.new_minute_list_min)
+/// # Parameters
+/// - `attribute`: Attribute of q list.
+///   - `'*'`: None
+///   - `'s'`: Sorted attribute
+///   - `'p'`: Parted attribute
+///   - `'u'`: Unique attribute
+///   - `'g'`: Grouped attribute
+/// - `list`: vector of:
+///     - `QTime` for `"qtime"`
+///     - `chrono::NaiveTime` for `"naivetime"`
+///     - tuple of (hour(`u32`), minute(`u32`)) for `"hm"`
+///     - Minutes since `00:00:00`(`i32`) for `"min"`
+/// # Example
+/// ```
+/// use rustkdb::qtype::*;
+/// use chrono::NaiveTime;
+/// 
+/// // `s#11:23 14:19
+/// let qminute_list=QGEN::new_minute_list!["qtime"; 's'; vec![QTimeGEN::new_minute(NaiveTime::from_hms(11, 23, 0)), QTimeGEN::new_minute(NaiveTime::from_hms((14, 19, 0))]];
+/// let qminute_list2=QGEN::new_minute_list!["naivetime"; 's'; vec![NaiveTime::from_hms(11, 23, 9), NaiveTime::from_hms(14, 19, 21)]];
+/// let qminute_list3=QGEN::new_minute_list!["hm"; 's'; vec![(11, 23), (14, 19)]];
+/// let qminute_list4=QGEN::new_minute_list!["min"; 's'; vec![683, 859]];
+/// 
+/// assert_eq!(qminute_list, qminute_list2);
+/// assert_eq!(qminute_list, qminute_list3);
+/// assert_eq!(qminute_list, qminute_list4);
+/// ```
+#[macro_export]
+macro_rules! q_minute_list {
+  ["qtime"; $attribute: expr; $list: expr] => {
+    QGEN::new_minute_list(CHAR_TO_ATTR[&$attribute], $list)
+  };
+  ["naivetime"; $attribute: expr; $list: expr] => {
+    QGEN::new_minute_list_naive(CHAR_TO_ATTR[&$attribute], $list)
+  };
+  ["hm"; $attribute: expr; $list: expr] => {
+    QGEN::new_minute_list_hm(CHAR_TO_ATTR[&$attribute], $list)
+  };
+  ["min"; $attribute: expr; $list: expr] => {
+    QGEN::new_minute_list_min(CHAR_TO_ATTR[&$attribute], $list)
+  };
+}
+
+/// Create q second list object. Macro of following constructors:
+/// - [`QGEN::new_second_list`](qtype/struct.QGEN.html#method.new_second_list)
+/// - [`QGEN::new_second_list_naive`](qtype/struct.QGEN.html#method.new_second_list_naive)
+/// - [`QGEN::new_second_list_hms`](qtype/struct.QGEN.html#method.new_second_list_hms)
+/// - [`QGEN::new_second_list_sec`](qtype/struct.QGEN.html#method.new_second_list_sec)
+/// # Parameters
+/// - `attribute`: Attribute of q list.
+///   - `'*'`: None
+///   - `'s'`: Sorted attribute
+///   - `'p'`: Parted attribute
+///   - `'u'`: Unique attribute
+///   - `'g'`: Grouped attribute
+/// - `list`: vector of:
+///     - `QTime` for `"qtime"`
+///     - `chrono::NaiveTime` for `"naivetime"`
+///     - tuple of (hour(`u32`), minute(`u32`), second(`u32`)) for `"hms"`
+///     - Seconds since `00:00:00`(`i32`) for `"sec"`
+/// # Example
+/// ```
+/// use rustkdb::qtype::*;
+/// use chrono::NaiveTime;
+/// 
+/// // 19:59:54 18:44:18
+/// let qsecond_list=q_second_list!["qtime"; '*'; vec![QTimeGEN::new_second(NaiveTime::from_hms(19, 59, 54)), QTimeGEN::new_second(NaiveTime::from_hms(18, 44, 18))]];
+/// let qsecond_list2=q_second_list!["naivetime"; '*'; vec![NaiveTime::from_hms(19, 59, 54), NaiveTime::from_hms(18, 44, 18)]];
+/// let qsecond_list3=q_second_list!["hms"; '*'; vec![(19, 59, 54), (18, 44, 18)]];
+/// let qsecond_list3=q_second_list!["sec"; '*'; vec![71994, 67458]];
+/// 
+/// assert_eq!(qsecond_list, qsecond_list2);
+/// assert_eq!(qsecond_list, qsecond_list3);
+/// assert_eq!(qsecond_list, qsecond_list4);
+/// ```
+#[macro_export]
+macro_rules! q_second_list {
+  ["qtime"; $attribute: expr; $list: expr] => {
+    QGEN::new_second_list(CHAR_TO_ATTR[&$attribute], $list)
+  };
+  ["naivetime"; $attribute: expr; $list: expr] => {
+    QGEN::new_second_list_naive(CHAR_TO_ATTR[&$attribute], $list)
+  };
+  ["hms"; $attribute: expr; $list: expr] => {
+    QGEN::new_second_list_hms(CHAR_TO_ATTR[&$attribute], $list)
+  };
+  ["sec"; $attribute: expr; $list: expr] => {
+    QGEN::new_second_list_sec(CHAR_TO_ATTR[&$attribute], $list)
+  };
+}
+
+/// Create q time list object. Macro of following constructors:
+/// - [`QGEN::new_time_list`](qtype/struct.QGEN.html#method.new_time_list)
+/// - [`QGEN::new_time_list_naive`](qtype/struct.QGEN.html#method.new_time_list_naive)
+/// - [`QGEN::new_time_list_hms_millis`](qtype/struct.QGEN.html#method.new_time_list_hms_millis)
+/// - [`QGEN::new_time_list_millis`](qtype/struct.QGEN.html#method.new_time_list_millis)
+/// # Parameters
+/// - `attribute`: Attribute of q list.
+///   - `'*'`: None
+///   - `'s'`: Sorted attribute
+///   - `'p'`: Parted attribute
+///   - `'u'`: Unique attribute
+///   - `'g'`: Grouped attribute
+/// - `list`: vector of:
+///     - `QTime` for `"qtime"`
+///     - `chrono::NaiveTime` for `"naivetime"`
+///     - tuple of (hour(`u32`), minute(`u32`), second(`u32`), millisecond(`u32`)) for `"hms"`
+///     - Milliseconds since `00:00:00.000`(`i32`) for `"millis"`
+/// # Example
+/// ```
+/// use rustkdb::qtype::*;
+/// use chrono::NaiveTime;
+/// 
+/// // 21:39:48.730 00:45:40.134 23:51:18.625
+/// // Precision under milliseconds is ignrored
+/// let qtime_list=q_time_list!["qtime"; '*'; vec![QTimeGEN::new_time(NaiveTime::from_hms_nano(21, 39, 48, 73055)), QTimeGEN::new_time(NaiveTime::from_hms_milli(0, 45, 40, 134)), QTimeGEN::new_time(NaiveTime::from_hms_nano(23, 51, 18, 6258290))]];
+/// 
+/// // Precision under milliseconds is ignrored
+/// let qtime_list2=q_time_list!["naivetime"; '*'; vec![NaiveTime::from_hms_milli(21, 39, 48, 730), NaiveTime::from_hms_milli(0, 45, 40, 134), NaiveTime::from_hms_nano(23, 51, 18, 62590001)]];
+/// let qtime_list3=q_time_list!["hms_millis"; '*'; vec![(21, 39, 48, 730), (0, 45, 40, 134), (23, 51, 18, 625)]];
+/// let qtime_list4=q_time_list!["millis"; '*'; vec![77988730_i64, 2740134, 85878625]];
+/// 
+/// assert_eq!(qtime_list, qtime_list2);
+/// assert_eq!(qtime_list, qtime_list3);
+/// assert_eq!(qtime_list, qtime_list4);
+/// ```
+#[macro_export]
+macro_rules! q_time_list {
+  ["qtime"; $attribute: expr; $list: expr] => {
+    QGEN::new_time_list(CHAR_TO_ATTR[&$attribute], $list)
+  };
+  ["naivetime"; $attribute: expr; $list: expr] => {
+    QGEN::new_time_list_naive(CHAR_TO_ATTR[&$attribute], $list)
+  };
+  ["hms_millis"; $attribute: expr; $list: expr] => {
+    QGEN::new_time_list_hms_millis(CHAR_TO_ATTR[&$attribute], $list)
+  };
+  ["millis"; $attribute: expr; $list: expr] => {
+    QGEN::new_time_list_millis(CHAR_TO_ATTR[&$attribute], $list)
+  };
+}
+
+/// Create q compound list object. Macro of [`QGEN::new_mixed_list`](qtype/struct.QGEN.html#method.new_mixed_list).
+/// # Parameters
+/// - `list`: vector of `Q`
+/// # Example
+/// ```
+/// use rustkdb::qtype::*;
+/// 
+/// let q_mixed_list=q_mixed_list![
+///   q_timestamp_list!["ymd_hms_nanos"; '*'; vec![(2011, 12, 19, 12, 4, 40, 3023), (2008, 2, 28, 2, 29, 36, 945650816), (2010, 9, 28, 13, 18, 3, 853207424)]],
+///   q_symbol_list!['*'; vec!["q", "Rust", "kdbplus"]],
+///   q_long_list!['s'; vec![1200_i64, 3000, 144000]]
+/// ];
+/// ```
+#[macro_export]
+macro_rules! q_mixed_list {
+  [$($list: expr),*] => {
+    QGEN::new_mixed_list(vec![$($list),*])
+  };
+}
+
+/// Create q table object. Macro of [`QGEN::new_table`](qtype/struct.QGEN.html#method.new_table).
+/// # Parameters
+/// - `header`: vector of `&str` or `String`
+/// - `body`: vector of `Q`
+/// # Example
+/// ```
+/// use rustkdb::qtype::*;
+/// 
+/// let q_table=q_table![
+///   vec!["time", "sym", "price", "size", "ex"];
+///   vec![
+///     q_timestamp_list!["datetime"; '*'; vec![Utc.ymd(2020, 6, 1).and_hms_nano(7, 2, 13, 238912781), Utc.ymd(2020, 6, 1).and_hms_nano(7, 2, 14, 230892785), Utc.ymd(2020, 6, 1).and_hms_nano(7, 3, 1, 137860387)]],
+///     q_symbol_list!['g'; vec!["Kx", "FD", "Kx"]],
+///     q_float_list!['*'; vec![103.68_f64, 107.42, 103.3]],
+///     q_long_list!['*'; vec![1000_i64, 2000, 3000]],
+///     q_string!['*'; "NLN"]
+///   ]
+/// ].expect("Failed to build table");
+/// ```
+#[macro_export]
+macro_rules! q_table {
+  [$header: expr; $body: expr] => {
+    QGEN::new_table($header, $body)
+  };
+}
+
+/// Create q dictionary object. Macro of [`QGEN::new_dictionary`](qtype/struct.QGEN.html#method.new_dictionary).
+/// # Parameters
+/// - `key`: q simple list object
+/// - `value`: q list object
+/// # Example
+/// ```
+/// use rustkdb::qtype::*;
+/// 
+/// // `s#100 200 300i!("super.firstderivatives.com"; 4f; 2010.03 2011.03m)
+/// let qdict=q_dictionary![
+///   q_int_list!['s'; vec![100, 200, 300]];
+///   q_mixed_list![q_string!['*'; "super.firstderivatives.com"], q_float![4.0], q_month_list!["ym"; '*'; vec![(2010, 3), (2011, 3)]]]
+/// ];
+/// ```
+#[macro_export]
+macro_rules! q_dictionary {
+  [$key: expr; $value: expr] => {
+    QGEN::new_dictionary($key, $value)
+  };
+}
+
+/// Create q keyed table object. Macro of [`QGEN::new_keyed_table`](qtype/struct.QGEN.html#method.new_keyed_table).
+/// # Parameters
+/// - `keyheader`: vector of `&str' or `String`
+/// - `keybody`: vector of `Q`
+/// - `valueheader`: vector of `&str` or `String`
+/// - `valuebody`: vector of `Q`
+/// # Example
+/// ```
+/// use rustkdb::qtype::*;
+/// 
+/// // city   | area_skm population
+/// // -------| -------------------
+/// // Tokyo  | 13500    37400000  
+/// // London | 17300    9046000   
+/// // NewYork| 1740     18819000  
+/// let qkeyed_table=q_keyed_table![
+///   vec!["city"];
+///   vec![
+///     q_symbol_list!['*'; vec!["Tokyo", "London", "NewYork"]]
+///   ];
+///   vec!["area_skm", "population"];
+///   vec![
+///     q_int_list!['*'; vec![13500, 17300, 1740]],
+///     q_long_list!['*'; vec![37400000_i64, 9046000, 18819000]]
+///   ]
+/// ]?;
+#[macro_export]
+macro_rules! q_keyed_table {
+  [$keyheader: expr; $keybody: expr; $valueheader: expr; $valuebody: expr] => {
+    QGEN::new_keyed_table($keyheader, $keybody, $valueheader, $valuebody)
+  };
+}
+
+/// Create q general null object. Macro of [`QGEN::new_general_null`](qtype/struct.QGEN.html#method.new_general_null).
+/// # Example
+/// ```
+/// use rustkdb::qtype::*;
+/// 
+/// // (::)
+/// let qnull=q_general_null!["::"];
+/// ```
+#[macro_export]
+macro_rules! q_general_null {
+  ["::"] =>{
+    QGEN::new_general_null()
+  };
+}
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 //                     Define Global                     //
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
+
+// %% Utility for Macro %%//vvvvvvvvvvvvvvvvvvvvvvvvvvvvvv/
+
+lazy_static!{
+  /// Map from `char` to `Attribute`. Used inside constructor macros.
+  pub static ref CHAR_TO_ATTR: HashMap<char, Attribute>={
+    vec![
+      ('*', Attribute::None),
+      ('s', Attribute::Sorted),
+      ('p', Attribute::Parted),
+      ('u', Attribute::Unique),
+      ('g', Attribute::Grouped)
+    ].into_iter().collect::<HashMap<_, _>>()
+  };
+}
 
 //%% q Type %%//vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv/
 
@@ -135,103 +1291,382 @@ pub const KDB_TIMESTAMP_OFFSET: i64=946684800000000000;
 
 //%% kdb+ Null and Infinity %%//vvvvvvvvvvvvvvvvvvvvvvvvvv/
 
-/// GUID null
+/// GUID null.
+/// # Example
+/// ```
+/// #[macro_use]
+/// extern crate rustkdb;
+/// 
+/// use rustkdb::qtype::*
+/// 
+/// let q_GUID_null=q_GUID![Q_0Ng];
 pub const Q_0Ng: [u8; 16]=[0u8; 16];
 
-/// Short null
+/// Short null.
+/// # Example
+/// ```
+/// #[macro_use]
+/// extern crate rustkdb;
+/// 
+/// use rustkdb::qtype::*
+/// 
+/// let q_short_null=q_short![Q_0Nh];
 pub const Q_0Nh: i16=i16::MIN;
 
-/// Short infinity
+/// Short infinity.
+/// # Example
+/// ```
+/// #[macro_use]
+/// extern crate rustkdb;
+/// 
+/// use rustkdb::qtype::*
+/// 
+/// let q_short_inf=q_short![Q_0Wh];
 pub const Q_0Wh: i16=i16::MAX;
 
-/// Short negative infinity
+/// Short negative infinity.
+/// # Example
+/// ```
+/// #[macro_use]
+/// extern crate rustkdb;
+/// 
+/// use rustkdb::qtype::*
+/// 
+/// let q_short_negative_inf=q_short![Q_NEG_0Wh];
 pub const Q_NEG_0Wh: i16=0_i16 - i16::MAX;
 
-/// Int null
+/// Int null.
+/// # Example
+/// ```
+/// #[macro_use]
+/// extern crate rustkdb;
+/// 
+/// use rustkdb::qtype::*
+/// 
+/// let q_int_null=q_int![Q_0Ni];
 pub const Q_0Ni: i32=i32::MIN;
 
-/// Int infinity
+/// Int infinity.
+/// # Example
+/// ```
+/// #[macro_use]
+/// extern crate rustkdb;
+/// 
+/// use rustkdb::qtype::*
+/// 
+/// let q_int_inf=q_int![Q_0Wi];
 pub const Q_0Wi: i32=i32::MAX;
 
-/// Int negative infinity
+/// Int negative infinity.
+/// # Example
+/// ```
+/// #[macro_use]
+/// extern crate rustkdb;
+/// 
+/// use rustkdb::qtype::*
+/// 
+/// let q_int_negative_inf=q_int![Q_NEG_0Wi];
 pub const Q_NEG_0Wi: i32=0_i32 - i32::MAX;
 
-/// Long null
+/// Long null.
+/// # Example
+/// ```
+/// #[macro_use]
+/// extern crate rustkdb;
+/// 
+/// use rustkdb::qtype::*
+/// 
+/// let q_long_null=q_long![Q_0Nj];
 pub const Q_0Nj: i64=i64::MIN;
 
-/// Long infinity
+/// Long infinity.
+/// # Example
+/// ```
+/// #[macro_use]
+/// extern crate rustkdb;
+/// 
+/// use rustkdb::qtype::*
+/// 
+/// let q_long_inf=q_long![Q_0Wj];
 pub const Q_0Wj: i64=i64::MAX;
 
-/// Long negative infinity
+/// Long negative infinity.
+/// # Example
+/// ```
+/// #[macro_use]
+/// extern crate rustkdb;
+/// 
+/// use rustkdb::qtype::*
+/// 
+/// let q_long_negative_inf=q_long![Q_NEG_0Wj];
 pub const Q_NEG_0Wj: i64=0_i64 - i64::MAX;
 
-/// Real null
+/// Real null.
+/// # Example
+/// ```
+/// #[macro_use]
+/// extern crate rustkdb;
+/// 
+/// use rustkdb::qtype::*
+/// 
+/// let q_real_null=q_real![Q_0Ne];
 pub const Q_0Ne: f32=f32::NAN;
 
-/// Real infinity
+/// Real infinity.
+/// # Example
+/// ```
+/// #[macro_use]
+/// extern crate rustkdb;
+/// 
+/// use rustkdb::qtype::*
+/// 
+/// let q_real_inf=q_real![Q_0We];
 pub const Q_0We: f32=f32::INFINITY;
 
-/// Real negative infinity
+/// Real negative infinity.
+/// # Example
+/// ```
+/// #[macro_use]
+/// extern crate rustkdb;
+/// 
+/// use rustkdb::qtype::*
+/// 
+/// let q_real_negative_inf=q_real![Q_NEG_0We];
 pub const Q_NEG_0We: f32=f32::NEG_INFINITY;
 
-/// Float null
+/// Float null.
+/// # Example
+/// ```
+/// #[macro_use]
+/// extern crate rustkdb;
+/// 
+/// use rustkdb::qtype::*
+/// 
+/// let q_float_null=q_float![Q_0n];
 pub const Q_0n: f64=f64::NAN;
 
-/// Float infinity
+/// Float infinity.
+/// # Example
+/// ```
+/// #[macro_use]
+/// extern crate rustkdb;
+/// 
+/// use rustkdb::qtype::*
+/// 
+/// let q_float_inf=q_float![Q_0w];
 pub const Q_0w: f64=f64::INFINITY;
 
-/// Float negative infinity
+/// Float negative infinity.
+/// # Example
+/// ```
+/// #[macro_use]
+/// extern crate rustkdb;
+/// 
+/// use rustkdb::qtype::*
+/// 
+/// let q_float_negative_inf=q_float![Q_NEG_0w];
+/// ```
 pub const Q_NEG_0w: f64=f64::NEG_INFINITY;
 
-/// Timestamp null
+/// Timestamp null.
+/// # Example
+/// ```
+/// #[macro_use]
+/// extern crate rustkdb;
+/// 
+/// use rustkdb::qtype::*
+/// 
+/// let q_timestamp_null=q_timestamp!["datetime"; Q_0Np];
+/// ```
 pub const Q_0Np: DateTime<Utc>=chrono::MIN_DATETIME;
 
-/// Timestamp infinity
+/// Timestamp infinity.
+/// # Example
+/// ```
+/// #[macro_use]
+/// extern crate rustkdb;
+/// 
+/// use rustkdb::qtype::*
+/// 
+/// let q_timestamp_inf=q_timestamp!["datetime"; Q_0Wp];
+/// ```
 pub const Q_0Wp: DateTime<Utc>=chrono::MAX_DATETIME;
 
-/// Month null
+/// Month null.
+/// # Example
+/// ```
+/// #[macro_use]
+/// extern crate rustkdb;
+/// 
+/// use rustkdb::qtype::*
+/// 
+/// let q_month_null=q_month!["date"; Q_0Nm];
+/// ```
 pub const Q_0Nm: Date<Utc>=chrono::MIN_DATE;
 
-/// Month infinity
+/// Month infinity.
+/// # Example
+/// ```
+/// #[macro_use]
+/// extern crate rustkdb;
+/// 
+/// use rustkdb::qtype::*
+/// 
+/// let q_month_inf=q_month!["date"; Q_0Wm];
+/// ```
 pub const Q_0Wm: Date<Utc>=chrono::MAX_DATE;
 
-/// Date null
+/// Date null.
+/// # Example
+/// ```
+/// #[macro_use]
+/// extern crate rustkdb;
+/// 
+/// use rustkdb::qtype::*
+/// 
+/// let q_date_null=q_date!["date"; Q_0Nd];
+/// ```
 pub const Q_0Nd: Date<Utc>=chrono::MIN_DATE;
 
-/// Date infinity
+/// Date infinity.
+/// # Example
+/// ```
+/// #[macro_use]
+/// extern crate rustkdb;
+/// 
+/// use rustkdb::qtype::*
+/// 
+/// let q_date_inf=q_date!["date"; Q_0Wd];
+/// ```
 pub const Q_0Wd: Date<Utc>=chrono::MAX_DATE;
 
-/// Datetime null
+/// Datetime null.
+/// # Example
+/// ```
+/// #[macro_use]
+/// extern crate rustkdb;
+/// 
+/// use rustkdb::qtype::*
+/// 
+/// let q_datetime_null=q_datetime!["datetime"; Q_0Nz];
+/// ```
 pub const Q_0Nz: DateTime<Utc>=chrono::MIN_DATETIME;
 
-/// Datetime infinity
-pub const Q_0Wz: DateTime<Utc>=chrono::MAX_DATETIME;
-
 lazy_static!{
-  /// Timespan null
+  /// Datetime infinity (millisecond precision). As this object is implemented as reference, dereference
+  ///  is necessary to use.
+  /// # Example
+  /// ```
+  /// #[macro_use]
+  /// extern crate rustkdb;
+  /// 
+  /// use rustkdb::qtype::*
+  /// 
+  /// let q_datetime_inf=q_datetime!["datetime"; *Q_0Wz];
+  /// ```
+  pub static ref Q_0Wz: DateTime<Utc>=chrono::MAX_DATETIME-Duration::nanoseconds(999999);
+  /// Timespan null. As this object is implemented as reference, dereference
+  ///  is necessary to use.
+  /// # Example
+  /// ```
+  /// #[macro_use]
+  /// extern crate rustkdb;
+  /// 
+  /// use rustkdb::qtype::*
+  /// 
+  /// let q_timespan_null=q_timespan!["duration"; *Q_0Nn];
+  /// ```
   pub static ref Q_0Nn: Duration=Duration::nanoseconds(i64::MIN);
-  /// Timespan infinity
+  /// Timespan infinity. As this object is implemented as reference, dereference
+  ///  is necessary to use.
+  /// # Example
+  /// ```
+  /// #[macro_use]
+  /// extern crate rustkdb;
+  /// 
+  /// use rustkdb::qtype::*
+  /// 
+  /// let q_timespan_inf=q_timespan!["duration"; *Q_0Wn];
+  /// ```
   pub static ref Q_0Wn: Duration=Duration::nanoseconds(i64::MAX);
-  /// Timespan negative infinity
+  /// Timespan negative infinity. As this object is implemented as reference, dereference
+  ///  is necessary to use.
+  /// # Example
+  /// ```
+  /// #[macro_use]
+  /// extern crate rustkdb;
+  /// 
+  /// use rustkdb::qtype::*
+  /// 
+  /// let q_timespan_negative_inf=q_timespan!["duration"; *Q_NEG_0Wn];
+  /// ```
   pub static ref Q_NEG_0Wn: Duration=Duration::nanoseconds(-i64::MAX);
 }
 
-/// Minute null
+/// Minute null.
+/// # Example
+/// ```
+/// #[macro_use]
+/// extern crate rustkdb;
+/// 
+/// use rustkdb::qtype::*
+/// 
+/// let q_minute_null=q_minute![Q_0Nu];
 pub const Q_0Nu: QTime=QTime::Null(i32::MIN);
 
-/// Minute infinity
+/// Minute infinity.
+/// # Example
+/// ```
+/// #[macro_use]
+/// extern crate rustkdb;
+/// 
+/// use rustkdb::qtype::*
+/// 
+/// let q_minute_inf=q_minute![Q_0Wu];
 pub const Q_0Wu: QTime=QTime::Inf(i32::MAX);
 
-/// Second null
+/// Second null.
+/// # Example
+/// ```
+/// #[macro_use]
+/// extern crate rustkdb;
+/// 
+/// use rustkdb::qtype::*
+/// 
+/// let q_second_null=q_second![Q_0Nv];
 pub const Q_0Nv: QTime=QTime::Null(i32::MIN);
 
-/// Second infinity
+/// Second infinity.
+/// # Example
+/// ```
+/// #[macro_use]
+/// extern crate rustkdb;
+/// 
+/// use rustkdb::qtype::*
+/// 
+/// let q_second_inf=q_second![Q_0Wv];
 pub const Q_0Wv: QTime=QTime::Inf(i32::MAX);
 
-/// Time null
+/// Time null.
+/// # Example
+/// ```
+/// #[macro_use]
+/// extern crate rustkdb;
+/// 
+/// use rustkdb::qtype::*
+/// 
+/// let q_time_null=q_time![Q_0Nt];
 pub const Q_0Nt: QTime=QTime::Null(i32::MIN);
 
-/// Time infinity
+/// Time infinity.
+/// # Example
+/// ```
+/// #[macro_use]
+/// extern crate rustkdb;
+/// 
+/// use rustkdb::qtype::*
+/// 
+/// let q_time_inf=q_time![Q_0Wt];
 pub const Q_0Wt: QTime=QTime::Inf(i32::MAX);
 
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
@@ -346,6 +1781,7 @@ impl QGEN{
   /// // 1b
   /// let qbool=QGEN::new_bool(true);
   /// ```
+  /// There is a macro for this constructor. See [`q_bool`](../macro.q_bool.html).
   pub fn new_bool(boolean: bool) -> Q{
     Q::Bool(boolean)
   }
@@ -358,6 +1794,7 @@ impl QGEN{
   /// // 5ae7962d-49f2-404d-5aec-f7c8abbae288
   /// let qGUID=QGEN::new_GUID([0x5a, 0xe7, 0x96, 0x2d, 0x49, 0xf2, 0x40, 0x4d, 0x5a, 0xec, 0xf7, 0xc8, 0xab, 0xba, 0xe2, 0x88]);
   /// ```
+  /// There is a macro for this constructor. See [`q_GUID`](../macro.q_GUID.html).
   pub fn new_GUID(guid: [u8; 16]) -> Q{
     Q::GUID(guid)
   }
@@ -370,6 +1807,7 @@ impl QGEN{
   /// // 0x3c
   /// let qbyte=QGEN::new_byte(0x3c);
   /// ```
+  /// There is a macro for this constructor. See [`q_byte`](../macro.q_byte.html).
   pub fn new_byte(byte: u8) -> Q{
     Q::Byte(byte)
   }
@@ -382,6 +1820,7 @@ impl QGEN{
   /// // -128h
   /// let qshort=QGEN::new_short(-128_i16);
   /// ```
+  /// There is a macro for this constructor. See [`q_short`](../macro.q_short.html).
   pub fn new_short(h: i16) -> Q{
     Q::Short(h)
   }
@@ -394,6 +1833,7 @@ impl QGEN{
   /// // 10392i
   /// let qint=QGEN::new_int(10392);
   /// ```
+  /// There is a macro for this constructor. See [`q_int`](../macro.q_int.html).
   pub fn new_int(i: i32) -> Q{
     Q::Int(i)
   }
@@ -406,6 +1846,7 @@ impl QGEN{
   /// // 86400000000000
   /// let qlong=QGEN::new_long(86400000000000_i64);
   /// ```
+  /// There is a macro for this constructor. See [`q_long`](../macro.q_long.html).
   pub fn new_long(j: i64) -> Q{
     Q::Long(j)
   }
@@ -418,6 +1859,7 @@ impl QGEN{
   /// // 12.34e
   /// let qreal=QGEN::new_real(12.34_f32);
   /// ```
+  /// There is a macro for this constructor. See [`q_real`](../macro.q_real.html).
   pub fn new_real(r: f32) -> Q{
     Q::Real(r)
   }
@@ -430,6 +1872,7 @@ impl QGEN{
   /// // -10957.5
   /// let qfloat=QGEN::new_float(-10957.5);
   /// ```
+  /// There is a macro for this constructor. See [`q_float`](../macro.q_float.html).
   pub fn new_float(f: f64) -> Q{
     Q::Float(f)
   }
@@ -442,6 +1885,7 @@ impl QGEN{
   /// // "Q"
   /// let qchar=QGEN::new_char('Q');
   /// ```
+  /// There is a macro for this constructor. See [`q_char`](../macro.q_char.html).
   pub fn new_char(c: char) -> Q{
     Q::Char(c)
   }
@@ -456,6 +1900,7 @@ impl QGEN{
   /// let qsymbol2=QGEN::new_symbol2(String::from("KxSystems"));
   /// assert_eq!(qsymbol, qsymbol2);
   /// ```
+  /// There is a macro for this constructor. See [`q_symbol`](../macro.q_symbol.html).
   pub fn new_symbol<T: ToString>(symbol: T) -> Q{
     Q::Symbol(symbol.to_string())
   }
@@ -470,11 +1915,12 @@ impl QGEN{
   /// // 2015.01.18D09:40:00.000000001
   /// let qtimestamp=QGEN::new_timestamp(Utc.ymd(2015, 1, 18).and_hms_nano(9, 40, 0, 1));
   /// ```
+  /// There is a macro for this constructor. See [`q_timestamp`](../macro.q_timestamp.html).
   pub fn new_timestamp(timestamp: DateTime<Utc>) -> Q{
     Q::Timestamp(timestamp)
   }
 
-  /// Create q timestamp object from nanoseconds from `1970-01-01`
+  /// Create q timestamp object from nanoseconds since `1970-01-01`
   /// # Example
   /// ```
   /// use chrono::prelude::*;
@@ -485,6 +1931,7 @@ impl QGEN{
   /// let qtimestamp2=QGEN::new_timestamp_nanos(123456789);
   /// assert_eq!(qtimestamp, qtimestamp2);
   /// ```
+  /// There is a macro for this constructor. See [`q_timestamp`](../macro.q_timestamp.html).
   pub fn new_timestamp_nanos(nanosecond: i64) -> Q{
     Q::Timestamp(match nanosecond{
       Q_0Nj => Q_0Np,
@@ -502,6 +1949,7 @@ impl QGEN{
   /// // 2000.01.01D12:30:45.000000001
   /// let qtimestamp=QGEN::new_timestamp_ymd_hms_nanos(2000, 1, 1, 12, 30, 45, 1);
   /// ```
+  /// There is a macro for this constructor. See [`q_timestamp`](../macro.q_timestamp.html).
   pub fn new_timestamp_ymd_hms_nanos(year: i32, month: u32, day: u32, hour: u32, minute: u32, second: u32, nanosecond: u32) -> Q{
     Q::Timestamp(Utc.ymd(year, month, day).and_hms_nano(hour, minute, second, nanosecond))
   }
@@ -518,6 +1966,7 @@ impl QGEN{
   /// let qmonth2=QGEN::new_month(Utc.ymd(2000, 1, 1));
   /// assert_eq!(qmonth, qmonth2);
   /// ```
+  /// There is a macro for this constructor. See [`q_month`](../macro.q_month.html).
   pub fn new_month(month: Date<Utc>) -> Q{
     if month.ne(&Q_0Wm) && month.ne(&Q_0Nm){
       let month=Utc.ymd(month.year(), month.month(), 1);
@@ -537,6 +1986,7 @@ impl QGEN{
   /// // 2001.12m
   /// let qmonth=QGEN::new_month_ym(2001, 12));
   /// ```
+  /// There is a macro for this constructor. See [`q_month`](../macro.q_month.html).
   pub fn new_month_ym(year: i32, month: u32) -> Q{
     Q::Month(Utc.ymd(year, month, 1))
   }
@@ -550,6 +2000,7 @@ impl QGEN{
   /// // 2012.03.16
   /// let qdate=QGEN::new_date(Utc.ymd(2012, 3, 16));
   /// ```
+  /// There is a macro for this constructor. See [`q_date`](../macro.q_date.html).
   pub fn new_date(date: Date<Utc>) -> Q{
     Q::Date(date)
   }
@@ -563,11 +2014,12 @@ impl QGEN{
   /// // 2008.08.12
   /// let qdate=QGEN::new_date_ymd(2008, 8, 12);
   /// ```
+  /// There is a macro for this constructor. See [`q_date`](../macro.q_date.html).
   pub fn new_date_ymd(year: i32, month: u32, day: u32) -> Q{
     Q::Date(Utc.ymd(year, month, day))
   }
 
-  /// Create q datetime object from chrono::DateTime<Utc>.
+  /// Create q datetime object from `chrono::DateTime<Utc>`.
   ///  The precision is milliseconds.
   /// # Example
   /// ```
@@ -577,11 +2029,17 @@ impl QGEN{
   /// // 2015.01.18T09:40:00.123z
   /// let qdatetime=QGEN::new_datetime(Utc.ymd(2015, 1, 18).and_hms_millis(9, 40, 0, 123));
   /// ```
+  /// There is a macro for this constructor. See [`q_datetime`](../macro.q_datetime.html).
   pub fn new_datetime(datetime: DateTime<Utc>) -> Q{
-    Q::Datetime(datetime)
+    if (datetime.nanosecond() % 1000000) != 0{
+      Q::Datetime(Utc.ymd(datetime.year(), datetime.month(), datetime.day()).and_hms_milli(datetime.hour(), datetime.minute(), datetime.second(), datetime.nanosecond() / 1000000))
+    }
+    else{
+      Q::Datetime(datetime)
+    }
   }
 
-  /// Create q datetime object from milliseconds from `1970-01-01`
+  /// Create q datetime object from milliseconds since `1970-01-01`
   /// # Example
   /// ```
   /// use chrono::prelude::*;
@@ -592,6 +2050,7 @@ impl QGEN{
   /// let qdatetime2=QGEN::new_timestamp_millis(123);
   /// assert_eq!(qdatetime, qdatetime2);
   /// ```
+  /// There is a macro for this constructor. See [`q_datetime`](../macro.q_datetime.html).
   pub fn new_datetime_millis(millisecond: i64) -> Q{
     Q::Datetime(Utc.timestamp_millis(millisecond))
   }
@@ -605,6 +2064,7 @@ impl QGEN{
   /// // 2000.01.01T12:30:45.111
   /// let qdatetime=QGEN::new_datetime_ymd_hms_millis(2000, 1, 1, 12, 30, 45, 111);
   /// ```
+  /// There is a macro for this constructor. See [`q_datetime`](../macro.q_datetime.html).
   pub fn new_datetime_ymd_hms_millis(year: i32, month: u32, day: u32, hour: u32, minute: u32, second: u32, millisecond: u32) -> Q{
     Q::Datetime(Utc.ymd(year, month, day).and_hms_milli(hour, minute, second, millisecond))
   }
@@ -618,11 +2078,13 @@ impl QGEN{
   /// // -2D
   /// let qtimespan=QGEN::new_timespan(Duration::nanoseconds(-16800000000000_i64));
   /// ```
+  /// There is a macro for this constructor. See [`q_timespan`](../macro.q_timespan.html).
   pub fn new_timespan(timespan: Duration) -> Q{
     Q::Timespan(timespan)
   }
 
   /// Create q timespan object from milliseconds.
+  /// Note: This constructor cannot create timespan null. Use [`QGEN::new_timespan_nanos`](qtype/struct.QGEN.html#method.new_timespan_nanos) instead.
   /// # Example
   /// ```
   /// use rustkdb::qtype::*;
@@ -633,6 +2095,7 @@ impl QGEN{
   /// let qtimespan2=QGEN::new_timespan_millis(86400000_i64);
   /// assert_eq!(qtimespan, qtimespan2);
   /// ```
+  /// There is a macro for this constructor. See [`q_timespan`](../macro.q_timespan.html).
   pub fn new_timespan_millis(millisecond: i64) -> Q{
     Q::Timespan(Duration::milliseconds(millisecond))
   }
@@ -647,14 +2110,21 @@ impl QGEN{
   /// let qtimespan=QGEN::new_timespan(Duration::days(1_i64));
   /// let qtimespan2=QGEN::new_timespan_nanos(86400000000000_i64);
   /// assert_eq!(qtimespan, qtimespan2);
+  /// 
+  /// // 0Wn
+  /// let qtimespan=QGEN::new_timespan(*Q_0Wn);
+  /// let qtimespan2=QGEN::new_timespan_nanos(Q_0Wj);
+  /// assert_eq!(qtimespan, qtimespan2);
   /// ```
+  /// There is a macro for this constructor. See [`q_timespan`](../macro.q_timespan.html).
   pub fn new_timespan_nanos(nanosecond: i64) -> Q{
     Q::Timespan(Duration::nanoseconds(nanosecond))
   }
 
   /// Create q minute object from `QTime`.
   ///  The only expected usage of this constructor is to create inifnity
-  ///  or null object.
+  ///  or null object. This constructor does not check validity of underlying `QTime` object.
+  ///  The values of `QTime` must be created with an associated `QTime` constructor, i.e. [`QTimeGEN::new_minute`](qtype/struct.QTimeGEN.html#method.new_minute)
   /// # Example
   /// ```
   /// use rustkdb::qtype::*;
@@ -663,6 +2133,7 @@ impl QGEN{
   /// // Infinite minute 0Wu
   /// let qminute=QGEN::new_minute(Q_0Wu);
   /// ```
+  /// There is a macro for this constructor. See [`q_minute`](../macro.q_minute.html).
   pub fn new_minute(minute: QTime) -> Q{
     Q::Minute(minute)
   }
@@ -678,6 +2149,7 @@ impl QGEN{
   /// // 10:03
   /// let qminute=QGEN::new_minute_naive(NaiveTime::from_hms(10, 3, 30));
   /// ```
+  /// There is a macro for this constructor. See [`q_minute`](../macro.q_minute.html).
   pub fn new_minute_naive(minute: NaiveTime) -> Q{
     Q::Minute(QTimeGEN::new_minute(minute))
   }
@@ -691,6 +2163,7 @@ impl QGEN{
   /// // 17:00
   /// let qminute=QGEN::new_minute_hm(17, 0));
   /// ```
+  /// There is a macro for this constructor. See [`q_minute`](../macro.q_minute.html).
   pub fn new_minute_hm(hour: u32, minute: u32) -> Q{
     // Call QTime::Time since we know the value is valid
     Q::Minute(QTime::Time(NaiveTime::from_hms(hour, minute, 0)))
@@ -704,6 +2177,7 @@ impl QGEN{
   /// // 18:23
   /// let qminute=QGEN::new_minute_min(1103));
   /// ```
+  /// There is a macro for this constructor. See [`q_minute`](../macro.q_minute.html).
   pub fn new_minute_min(minute: i32) -> Q{
     if minute == Q_0Ni{
       Q::Minute(Q_0Nu)
@@ -720,7 +2194,8 @@ impl QGEN{
   
   /// Create q second object from `QTime`.
   ///  The only expected usage of this constructor is to create inifnity
-  ///  or null object.
+  ///  or null object. This constructor does not check validity of underlying `QTime` object.
+  ///  The values of `QTime` must be created with associated `QTime` constructors, i.e. `QTimeGEN::new_*`
   /// # Example
   /// ```
   /// use rustkdb::qtype::*;
@@ -729,6 +2204,7 @@ impl QGEN{
   /// // Null second 0Nv
   /// let qsecond=QGEN::new_second(Q_0Nv);
   /// ```
+  /// There is a macro for this constructor. See [`q_second`](../macro.q_second.html).
   pub fn new_second(second: QTime) -> Q{
     Q::Second(second)
   }
@@ -744,6 +2220,7 @@ impl QGEN{
   /// // 13:40:59
   /// let qsecond=QGEN::new_second_naive(NaiveTime::from_hms(13, 40, 59));
   /// ```
+  /// There is a macro for this constructor. See [`q_second`](../macro.q_second.html).
   pub fn new_second_naive(second: NaiveTime) -> Q{
     Q::Second(QTimeGEN::new_second(second))
   }
@@ -757,6 +2234,7 @@ impl QGEN{
   /// // 04:30:00
   /// let qsecond=QGEN::new_second_hms(4, 30, 0));
   /// ```
+  /// There is a macro for this constructor. See [`q_second`](../macro.q_second.html).
   pub fn new_second_hms(hour: u32, minute: u32, second: u32) -> Q{
     // Call QTime::Time since we know the value is valid
     Q::Second(QTime::Time(NaiveTime::from_hms(hour, minute, second)))
@@ -770,6 +2248,7 @@ impl QGEN{
   /// // 02:24:30
   /// let qsecond=QGEN::new_second_sec(8660));
   /// ```
+  /// There is a macro for this constructor. See [`q_second`](../macro.q_second.html).
   pub fn new_second_sec(second: i32) -> Q{
     if second == Q_0Ni{
       Q::Second(Q_0Nv)
@@ -786,7 +2265,8 @@ impl QGEN{
 
   /// Create q time object from `QTime`.
   ///  The only expected usage of this constructor is to create inifnity
-  ///  or null object.
+  ///  or null object. This constructor does not check validity of underlying `QTime` object.
+  ///  The values of `QTime` must be created with associated `QTime` constructors, i.e. `QTimeGEN::new_*`.
   /// # Example
   /// ```
   /// use rustkdb::qtype::*;
@@ -795,6 +2275,7 @@ impl QGEN{
   /// // Null time 0Nt
   /// let qtime=QGEN::new_time(Q_0Nt);
   /// ```
+  /// There is a macro for this constructor. See [`q_time`](../macro.q_time.html).
   pub fn new_time(time: QTime) -> Q{
     Q::Time(time)
   }
@@ -810,6 +2291,7 @@ impl QGEN{
   /// // 08:15:22.905
   /// let qtime=QGEN::new_time_naive(NaiveTime::from_hms_milli(8, 15, 22, 905));
   /// ```
+  /// There is a macro for this constructor. See [`q_time`](../macro.q_time.html).
   pub fn new_time_naive(time: NaiveTime) -> Q{
     Q::Time(QTimeGEN::new_time(time))
   }
@@ -823,6 +2305,7 @@ impl QGEN{
   /// // 11:02:37.030
   /// let qtime=QGEN::new_time_hms_millis(11, 2, 37, 30);
   /// ```
+  /// There is a macro for this constructor. See [`q_time`](../macro.q_time.html).
   pub fn new_time_hms_millis(hour: u32, minute: u32, second: u32, millisecond: u32) -> Q{
     // Call QTime::Time since we know the value is valid
     Q::Time(QTime::Time(NaiveTime::from_hms_milli(hour, minute, second, millisecond)))
@@ -836,6 +2319,7 @@ impl QGEN{
   /// // 14:11:00.647
   /// let qtime=QGEN::new_time_list_millis(51060647);
   /// ```
+  /// There is a macro for this constructor. See [`q_time`](../macro.q_time.html).
   pub fn new_time_millis(time: i32) -> Q{
     if time == Q_0Ni{
       Q::Time(Q_0Nt)
@@ -860,6 +2344,7 @@ impl QGEN{
   /// // `p#11000b
   /// let qbool_list=QGEN::new_bool_list(Attribute::Parted, vec![true, true, false, false, false]);
   /// ```
+  /// There is a macro for this constructor. See [`q_bool_list`](../macro.q_bool_list.html).
   pub fn new_bool_list(attr: Attribute, value: Vec<bool>) -> Q{
     Q::BoolL(QList::new(attr, value))
   }
@@ -872,6 +2357,7 @@ impl QGEN{
   /// // 8c6b8b64-6815-6084-0a3e-178401251b68 5ae7962d-49f2-404d-5aec-f7c8abbae288
   /// let qGUID_list=QGEN::new_GUID_list(Attribute::None, vec![[0x8c, 0x6b, 0x8b, 0x64, 0x68, 0x15, 0x60, 0x84, 0x0a, 0x3e, 0x17, 0x84, 0x01, 0x25, 0x1b, 0x68], [0x5a, 0xe7, 0x96, 0x2d, 0x49, 0xf2, 0x40, 0x4d, 0x5a, 0xec, 0xf7, 0xc8, 0xab, 0xba, 0xe2, 0x88]]);
   /// ```
+  /// There is a macro for this constructor. See [`q_GUID_list`](../macro.q_GUID_list.html).
   pub fn new_GUID_list(attr: Attribute, value: Vec<[u8; 16]>) -> Q{
     Q::GUIDL(QList::new(attr, value))
   }
@@ -884,6 +2370,7 @@ impl QGEN{
   /// // 0x4b7853797374656d73
   /// let qbyte_list=QGEN::new_byte_list(Attribute::None, vec![0x4b, 0x78, 0x53, 0x79, 0x73, 0x74, 0x65, 0x6d, 0x73])
   /// ```
+  /// There is a macro for this constructor. See [`q_byte_list`](../macro.q_byte_list.html).
   pub fn new_byte_list(attr: Attribute, value: Vec<u8>) -> Q{
     Q::ByteL(QList::new(attr, value))
   }
@@ -896,6 +2383,7 @@ impl QGEN{
   /// // 10 -30 20h
   /// let qshort_list=QGEN::new_short_list(Attribute::None, vec![10_i16, -30, 20])
   /// ```
+  /// There is a macro for this constructor. See [`q_short_list`](../macro.q_short_list.html).
   pub fn new_short_list(attr: Attribute, value: Vec<i16>) -> Q{
     Q::ShortL(QList::new(attr, value))
   }
@@ -908,6 +2396,7 @@ impl QGEN{
   /// // -3429000 120000
   /// let qint_list=QGEN::new_int_list(Attribute::None, vec![-3429000, 120000]);
   /// ```
+  /// There is a macro for this constructor. See [`q_int_list`](../macro.q_int_list.html).
   pub fn new_int_list(attr: Attribute, value: Vec<i32>) -> Q{
     Q::IntL(QList::new(attr, value))
   }
@@ -918,8 +2407,9 @@ impl QGEN{
   /// use rustkdb::qtype::*;
   /// 
   /// // enlist 42
-  /// let qlong_list=QGEN::new_int_list(Attribute::None, vec![42_i64]);
+  /// let qlong_list=QGEN::new_long_list(Attribute::None, vec![42_i64]);
   /// ```
+  /// There is a macro for this constructor. See [`q_long_list`](../macro.q_long_list.html).
   pub fn new_long_list(attr: Attribute, value: Vec<i64>) -> Q{
     Q::LongL(QList::new(attr, value))
   }
@@ -932,6 +2422,7 @@ impl QGEN{
   /// // 0.940909 0W 2039.30499e
   /// let qreal_list=QGEN::new_real_list(Attribute::None, vec![0.940909_f32, Q_0We, 2039.30499]);
   /// ```
+  /// There is a macro for this constructor. See [`q_real_list`](../macro.q_real_list.html).
   pub fn new_real_list(attr: Attribute, value: Vec<f32>) -> Q{
     Q::RealL(QList::new(attr, value))
   }
@@ -942,22 +2433,22 @@ impl QGEN{
   /// use rustkdb::qtype::*;
   /// 
   /// // -0.9 -0w 1.0 -1.1 1.2 0n
-  /// 
   /// let qfloat_list=QGEN::new_float_list(Attribute::None, vec![-0.9 Q_NEG_0w, 1.0 -1.1 1.2, Q_0n]);
   /// ```
+  /// There is a macro for this constructor. See [`q_float_list`](../macro.q_float_list.html).
   pub fn new_float_list(attr: Attribute, value: Vec<f64>) -> Q{
     Q::FloatL(QList::new(attr, value))
   }
 
-  /// Create q string from an `Attribute` and `str` or `String`.
+  /// Create q string from an `Attribute` and `&str` or `String`.
   /// # Example
   /// ```
   /// use rustkdb::qtype::*;
   /// 
   /// // "Tokyo"
-  /// 
   /// let qchar_list=QGEN::new_char_list(Attribute::None, "Tokyo");
   /// ```
+  /// There is a macro for this constructor. See [`q_string`](../macro.q_string.html).
   pub fn new_char_list<T: ToString>(attr: Attribute, value: T) -> Q{
     Q::CharL(QList::new(attr, value.to_string()))
   }
@@ -968,9 +2459,9 @@ impl QGEN{
   /// use rustkdb::qtype::*;
   /// 
   /// // `u#`Last`Derivatives
-  /// 
-  /// let qsymbol_list=QGEN::new_symbol_list(Attribute::Unique, vec!["Last" "Derivatives"]);
+  /// let qsymbol_list=QGEN::new_symbol_list(Attribute::Unique, vec!["Last", "Derivatives"]);
   /// ```
+  /// There is a macro for this constructor. See [`q_symbol_list`](../macro.q_symbol_list.html).
   pub fn new_symbol_list<T: ToString>(attr: Attribute, value: Vec<T>) -> Q{
     let value=value.iter().map(|string| string.to_string()).collect();
     Q::SymbolL(QList::new(attr, value))
@@ -985,11 +2476,12 @@ impl QGEN{
   /// // 2009.02.18D00:00:03.000000115 2000.02.19D02:14:00.000009023
   /// let qtimestamp_list=QGEN::new_timestamp_list(Attribute::None, vec![Utc.ymd(2009, 2, 18).and_hms_nano(0, 0, 3, 115), Utc.ymd(2009, 2, 19).and_hms_nano(2, 14, 0, 9023)]);
   /// ```
+  /// There is a macro for this constructor. See [`q_timestamp_list`](../macro.q_timestamp_list.html).
   pub fn new_timestamp_list(attr: Attribute, value: Vec<DateTime<Utc>>) -> Q{
     Q::TimestampL(QList::new(attr, value))
   }
 
-  /// Create q timestamp list from an `Attribute` and a vector of nanoseconds from `1970-01-01`.
+  /// Create q timestamp list from an `Attribute` and a vector of nanoseconds since `1970-01-01`.
   /// # Example
   /// ```
   /// use rustkdb::qtype::*;
@@ -997,6 +2489,7 @@ impl QGEN{
   /// // enlist 2000.01.01D00:00:00.000000000
   /// let qtimestamp_list=QGEN::new_timestamp_list_nanos(Attribute::None, vec![KDB_TIMESTAMP_OFFSET]);
   /// ```
+  /// There is a macro for this constructor. See [`q_timestamp_list`](../macro.q_timestamp_list.html).
   pub fn new_timestamp_list_nanos(attr: Attribute, value: Vec<i64>) -> Q{
     let value=value.iter().map(|&nanos| {
       match nanos{
@@ -1016,6 +2509,7 @@ impl QGEN{
   /// // 2001.03.16D00:00:00.000001111 2002.03.16D00:00:00.000002222
   /// let qtimestamp_list=QGEN::new_timestamp_list_ymd_hms_nanos(Attribute::None, vec![(2001, 3, 16, 0, 0, 0, 1111), (2002, 3, 16, 0, 0, 0, 2222)]);
   /// ```
+  /// There is a macro for this constructor. See [`q_timestamp_list`](../macro.q_timestamp_list.html).
   pub fn new_timestamp_list_ymd_hms_nanos(attr: Attribute, value: Vec<(i32, u32, u32, u32, u32, u32, u32)>) -> Q{
     let value=value.iter().map(|&(y, m, d, H, M, S, nanos)| Utc.ymd(y, m, d).and_hms_nano(H, M, S, nanos)).collect();
     Q::TimestampL(QList::new(attr, value))
@@ -1030,6 +2524,7 @@ impl QGEN{
   /// // 2012.07 2015.10 0N 2018.04m
   /// let qmonth_list=QGEN::new_month_list(Attribute::None, vec![Utc.ymd(2012, 7, 1), Utc.ymd(2015, 10, 1), Q_0Nm, Utc.ymd(2018, 4, 1)]);
   /// ```
+  /// There is a macro for this constructor. See [`q_month_list`](../macro.q_month_list.html).
   pub fn new_month_list(attr: Attribute, value: Vec<Date<Utc>>) -> Q{
     let value=value.iter().map(|&date| 
       if date.ne(&Q_0Wm) && date.ne(&Q_0Nm){
@@ -1050,6 +2545,7 @@ impl QGEN{
   /// // 2004.12 2009.07 2000.3m
   /// let qmonth_list=QGEN::new_month_list_ym(Attribute::None, vec![(2004, 12), (2009, 7), (2000, 3)]);
   /// ```
+  /// There is a macro for this constructor. See [`q_month_list`](../macro.q_month_list.html).
   pub fn new_month_list_ym(attr: Attribute, value: Vec<(i32, u32)>) -> Q{
     let value=value.iter().map(|&(y, m)| Utc.ymd(y, m, 1)).collect();
     Q::MonthL(QList::new(attr, value))
@@ -1064,6 +2560,7 @@ impl QGEN{
   /// // 2005.01.05 2008.03.31
   /// let qdate_list=QGEN::new_date_list(Attribute::None, vec![Utc.ymd(2005, 1, 5), Utc.ymd(2008, 3, 31)]);
   /// ```
+  /// There is a macro for this constructor. See [`q_date_list`](../macro.q_date_list.html).
   pub fn new_date_list(attr: Attribute, value: Vec<Date<Utc>>) -> Q{
     Q::DateL(QList::new(attr, value))
   }
@@ -1076,6 +2573,7 @@ impl QGEN{
   /// // enlist 2013.10.19
   /// let qdate_list=QGEN::new_date_list_ymd(Attribute::None, vec![(2013, 10, 19)]);
   /// ```
+  /// There is a macro for this constructor. See [`q_date_list`](../macro.q_date_list.html).
   pub fn new_date_list_ymd(attr: Attribute, value: Vec<(i32, u32, u32)>) -> Q{
     let value=value.iter().map(|&(y, m, d)| Utc.ymd(y, m, d)).collect();
     Q::DateL(QList::new(attr, value))
@@ -1090,7 +2588,16 @@ impl QGEN{
   /// // 2018.04.18T02:20:23.290 2009.02.03T23:34:34.878z
   /// let qdatetime_list=QGEN::new_datetime_list(Attribute::None, vec![Utc.ymd(2018, 4, 18).and_hms_milli(2, 20, 23, 290), Utc.ymd(2009, 2, 13).and_hms_milli(23, 34, 34, 878)]);
   /// ```
+  /// There is a macro for this constructor. See [`q_datetime_list`](../macro.q_datetime_list.html).
   pub fn new_datetime_list(attr: Attribute, value: Vec<DateTime<Utc>>) -> Q{
+    let value=value.iter().map(|&datetime|{
+      if (datetime.nanosecond() % 1000000) != 0{
+        Utc.ymd(datetime.year(), datetime.month(), datetime.day()).and_hms_milli(datetime.hour(), datetime.minute(), datetime.second(), datetime.nanosecond() / 1000000)
+      }
+      else{
+        datetime
+      }
+    }).collect();
     Q::DatetimeL(QList::new(attr, value))
   }
 
@@ -1102,12 +2609,13 @@ impl QGEN{
   /// // 2020.10.09T07:18:20.388 2002.03.16T04:24:37.003 2009.03.08T17:27:07.260z
   /// let qdatetime_list=QGEN::new_datetime_list_ymd_hms_millis(Attribute::None, vec![(2020, 10, 09, 7, 18, 20, 388), (2002, 3, 16, 4, 24, 37, 3), (2009, 3, 8, 17, 27, 7, 260)]);
   /// ```
+  /// There is a macro for this constructor. See [`q_datetime_list`](../macro.q_datetime_list.html).
   pub fn new_datetime_list_ymd_hms_millis(attr: Attribute, value: Vec<(i32, u32, u32, u32, u32, u32, u32)>) -> Q{
     let value=value.iter().map(|&(y, m, d, H, M, S, millis)| Utc.ymd(y, m, d).and_hms_milli(H, M, S, millis)).collect();
     Q::DatetimeL(QList::new(attr, value))
   }
 
-  /// Create q datetime list from an `Attribute` and a vector of  milliseconds from `1970-01-01`.
+  /// Create q datetime list from an `Attribute` and a vector of  milliseconds since `1970-01-01`.
   /// # Example
   /// ```
   /// use rustkdb::qtype::*;
@@ -1115,6 +2623,7 @@ impl QGEN{
   /// // enlist 2003.05.09T10:51:30.373z
   /// let qdatetime_list=QGEN::new_datetime_list_millis(Attribute::None, vec![105792690373_i64]);
   /// ```
+  /// There is a macro for this constructor. See [`q_datetime_list`](../macro.q_datetime_list.html).
   pub fn new_datetime_list_millis(attr: Attribute, value: Vec<i64>) -> Q{
     let value=value.iter().map(|&millis| Utc.timestamp_millis(millis)).collect();
     Q::DatetimeL(QList::new(attr, value))
@@ -1127,8 +2636,9 @@ impl QGEN{
   /// use chrono::Duration;
   /// 
   /// // 1D 2D00:00:00.000000001 -0Wn
-  /// let qtimespan_list=QGEN::new_timespan_list(Attribute::None, vec![Duration::days(1), Duration::nanoseconds(ONE_DAY_NANOS, 1 + 2 * ONE_DAY_NANOS), Q_NEG_0Wn]);
+  /// let qtimespan_list=QGEN::new_timespan_list(Attribute::None, vec![Duration::days(1), Duration::nanoseconds(1 + 2 * ONE_DAY_NANOS), Q_NEG_0Wn]);
   /// ```
+  /// There is a macro for this constructor. See [`q_timespan_list`](../macro.q_timespan_list.html).
   pub fn new_timespan_list(attr: Attribute, value: Vec<Duration>) -> Q{
     Q::TimespanL(QList::new(attr, value))
   }
@@ -1141,12 +2651,14 @@ impl QGEN{
   /// // enlist -0D00:00:01.000789238
   /// let qtimespan_list=QGEN::new_timespan_list_nanos(Attribute::None, vec![-1000789238_i64]);
   /// ```
+  /// There is a macro for this constructor. See [`q_timespan_list`](../macro.q_timespan_list.html).
   pub fn new_timespan_list_nanos(attr: Attribute, value: Vec<i64>) -> Q{
     let value=value.iter().map(|&nanos| Duration::nanoseconds(nanos)).collect();
     Q::TimespanL(QList::new(attr, value))
   }
 
   /// Create q timespan list from an `Attribute` and a vector of milliseconds.
+  /// Note: This constructor cannot create timespan null. Use [`QGEN::new_timespan_list_nanos`](qtype/struct.QGEN.html#method.new_timespan_list_nanos) instead.
   /// # Example
   /// ```
   /// use rustkdb::qtype::*;
@@ -1154,6 +2666,7 @@ impl QGEN{
   /// // 2D03:00:01.365 3D03:00:04.837
   /// let qtimespan_list=QGEN::new_timespan_list_millis(Attribute::None, vec![18360136_i64, 270004837]);
   /// ```
+  /// There is a macro for this constructor. See [`q_timespan_list`](../macro.q_timespan_list.html).
   pub fn new_timespan_list_millis(attr: Attribute, value: Vec<i64>) -> Q{
     let value=value.iter().map(|&millis| Duration::milliseconds(millis)).collect();
     Q::TimespanL(QList::new(attr, value))
@@ -1161,7 +2674,8 @@ impl QGEN{
 
   /// Create q minute list from `Attribute` and a vector of `QTime`.
   ///  The only expected usage of this constructor is to include null or infinity minute
-  ///  in the list.
+  ///  in the list. This constructor does not check validity of underlying `QTime` object.
+  ///  The values of `QTime` must be created with associated `QTime` constructors.
   /// # Example
   /// ```
   /// use rustkdb::qtype::*;
@@ -1170,6 +2684,7 @@ impl QGEN{
   /// // 13:59 0Wu 20:08
   /// let qminute_list=QGEN::new_minute_list(Attribute::None, vec![QTimeGEN::new_minute(NaiveTime::from_hms(13, 59, 0)), Q_0Wu, QTimeGEN::new_minute(NaiveTime::from_hms(20, 08, 0))]);
   /// ```
+  /// There is a macro for this constructor. See [`q_minute_list`](../macro.q_minute_list.html).
   pub fn new_minute_list(attr: Attribute, value: Vec<QTime>) -> Q{
     Q::MinuteL(QList::new(attr, value))
   }
@@ -1182,6 +2697,7 @@ impl QGEN{
   /// // `s#11:23 14:19
   /// let qminute_list=QGEN::new_minute_list_hm(Attribute::Sorted, vec![(11, 23), (14, 19)]);
   /// ```
+  /// There is a macro for this constructor. See [`q_minute_list`](../macro.q_minute_list.html).
   pub fn new_minute_list_hm(attr: Attribute, value: Vec<(u32, u32)>) -> Q{
     // Call QTime::Time since we know the value is valid
     let value=value.iter().map(|&(h, m)| QTime::Time(NaiveTime::from_hms(h, m, 0))).collect();
@@ -1197,6 +2713,7 @@ impl QGEN{
   /// // 20:01 21:02
   /// let qminute_list=QGEN::new_minute_list_naive(Attribute::None, vec![NaiveTime::from_hms(20, 01, 0), NaiveTime::from_hms(21, 2, 0)]);
   /// ```
+  /// There is a macro for this constructor. See [`q_minute_list`](../macro.q_minute_list.html).
   pub fn new_minute_list_naive(attr: Attribute, value: Vec<NaiveTime>) -> Q{
     let value=value.iter().map(|&minute| QTimeGEN::new_minute(minute)).collect();
     Q::MinuteL(QList::new(attr, value))
@@ -1210,6 +2727,7 @@ impl QGEN{
   /// // 15:08 23:04 21:21
   /// let qminute_list_min=QGEN::new_minute_list_min(Attribute::Sorted, vec![908, 1384, 1281]);
   /// ```
+  /// There is a macro for this constructor. See [`q_minute_list`](../macro.q_minute_list.html).
   pub fn new_minute_list_min(attr: Attribute, value: Vec<i32>) -> Q{
     let value=value.iter().map(|&minute| {
       if minute == Q_0Wi{
@@ -1229,7 +2747,8 @@ impl QGEN{
 
   /// Create q second list from `Attribute` and a vector of `QTime`.
   ///  The only expected usage of this constructor is to include null or infinity second
-  ///  in the list.
+  ///  in the list. This constructor does not check validity of underlying `QTime` object.
+  ///  The values of `QTime` must be created with associated `QTime` constructors.
   /// # Example
   /// ```
   /// use rustkdb::qtype::*;
@@ -1238,6 +2757,7 @@ impl QGEN{
   /// // 0Wv 0Nv 16:09:10
   /// let qsecond_list=QGEN::new_second_list(Attribute::None, vec![Q_0Wv, Q_0Nv, QTimeGEN::new_second(NaiveTime::from_hms(16, 09, 10))]);
   /// ```
+  /// There is a macro for this constructor. See [`q_second_list`](../macro.q_second_list.html).
   pub fn new_second_list(attr: Attribute, value: Vec<QTime>) -> Q{
     Q::SecondL(QList::new(attr, value))
   }
@@ -1251,6 +2771,7 @@ impl QGEN{
   /// // 19:59:54 18:44:18
   /// let qsecond_list=QGEN::new_second_list_naive(Attribute::None, vec![NaiveTime::from_hms(19, 59, 54), NaiveTime::from_hms(18, 44, 18)]);
   /// ```
+  /// There is a macro for this constructor. See [`q_second_list`](../macro.q_second_list.html).
   pub fn new_second_list_naive(attr: Attribute, value: Vec<NaiveTime>) -> Q{
     let value=value.iter().map(|&second| QTimeGEN::new_second(second)).collect();
     Q::SecondL(QList::new(attr, value))
@@ -1264,6 +2785,7 @@ impl QGEN{
   /// // 08:00:03 06:13:29
   /// let qsecond_list=QGEN::new_second_list_hms(Attribute::None, vec![(8, 0, 3), (6, 13, 29)]);
   /// ```
+  /// There is a macro for this constructor. See [`q_second_list`](../macro.q_second_list.html).
   pub fn new_second_list_hms(attr: Attribute, value: Vec<(u32, u32, u32)>) -> Q{
     // Call QTime::Time since we know the value is valid
     let value=value.iter().map(|&(h, m, s)| QTime::Time(NaiveTime::from_hms(h, m, s))).collect();
@@ -1278,6 +2800,7 @@ impl QGEN{
   /// // 16:27:06 17:13:45
   /// let qsecond_list=QGEN::new_second_list_sec(Attribute::None, vec![59226, 62025]);
   /// ```
+  /// There is a macro for this constructor. See [`q_second_list`](../macro.q_second_list.html).
   pub fn new_second_list_sec(attr: Attribute, value: Vec<i32>) -> Q{
     let value=value.iter().map(|&second| {
       if second == Q_0Ni{
@@ -1307,6 +2830,7 @@ impl QGEN{
   /// // 10:13:46.289 0Nt
   /// let qtime_list=QGEN::new_time_list(Attribute::None, vec![QTimeGEN::new_time(NaiveTime::from_hms_milli(10, 13, 46, 289)), Q_0Nt]);
   /// ```
+  /// There is a macro for this constructor. See [`q_time_list`](../macro.q_time_list.html).
   pub fn new_time_list(attr: Attribute, value: Vec<QTime>) -> Q{
     Q::TimeL(QList::new(attr, value))
   }
@@ -1320,6 +2844,7 @@ impl QGEN{
   /// // 21:39:48.730 00:45:40.134 23:51:18.625
   /// let qtime_list=QGEN::new_time_list_naive(Attribute::None, vec![NaiveTime::from_hms_milli(21, 39, 48, 730), NaiveTime::from_hms_milli(0, 45, 40, 134), NaiveTime::from_hms_milli(23, 51, 18, 625)]);
   /// ```
+  /// There is a macro for this constructor. See [`q_time_list`](../macro.q_time_list.html).
   pub fn new_time_list_naive(attr: Attribute, value: Vec<NaiveTime>) -> Q{
     let value=value.iter().map(|&time| QTimeGEN::new_time(time)).collect();
     Q::TimeL(QList::new(attr, value))
@@ -1334,6 +2859,7 @@ impl QGEN{
   /// // enlist 04:54:11.685
   /// let qtime_list=QGEN::new_time_list_hms_millis(Attribute::None, vec![(4, 54, 11, 685)]);
   /// ```
+  /// There is a macro for this constructor. See [`q_time_list`](../macro.q_time_list.html).
   pub fn new_time_list_hms_millis(attr: Attribute, value: Vec<(u32, u32, u32, u32)>) -> Q{
     // Call QTime::Time since we know the value is valid
     let value=value.iter().map(|&(h, m, s, millis)| QTime::Time(NaiveTime::from_hms_milli(h, m, s, millis))).collect();
@@ -1348,6 +2874,7 @@ impl QGEN{
   /// // 05:18:45.828 02:25:54.221 11:32:19.305
   /// let qtime_list=QGEN::new_time_list_millis(Attribute::None, vec![19125828, 8754221, 41539305]);
   /// ```
+  /// There is a macro for this constructor. See [`q_time_list`](../macro.q_time_list.html).
   pub fn new_time_list_millis(attr: Attribute, value: Vec<i32>) -> Q{
     let value=value.iter().map(|&time| {
       if time == Q_0Ni{
@@ -1375,6 +2902,7 @@ impl QGEN{
   /// // (2000.01.01D00:00:00 2000.01.02D00:00:00; 1b; `Pork`Chicken`Beef; "Love and Peace")
   /// let qmixed=QGEN::new_mixed_list(vec![QGEN::new_timestamp_list_nanos(Attribute::None, vec![KDB_TIMESTAMP_OFFSET, KDB_TIMESTAMP_NANOS + ONE_DAY_NANOS]), QGEN::new_bool(true), QGEN::new_symbol_list("Pork", "Chicken", "Beef"), QGEN::new_char_list("Love and Peace")]);
   /// ```
+  /// There is a macro for this constructor. See [`q_mixed_list`](../macro.q_mixed_list.html).
   pub fn new_mixed_list(list: Vec<Q>) -> Q{
     Q::MixedL(QList::new(Attribute::None, list))
   }
@@ -1386,8 +2914,9 @@ impl QGEN{
   /// use rustkdb::qtype::*;
   /// 
   /// // `s#100 200 300i!("super.firstderivatives.com"; 4f; 2010.03 2011.03m)
-  /// let qdict=QGEN::new_dictionary(QGEN::new_int_list(Attribute::Sorted, vec![100, 200, 300]), QGEN::new_mixed_list(vec![QGEN::new_char_list("super.firstderivatives.com"), QGEN::new_float("4.0"), QGEN::new_month_list_ym(Attribute::None, vec![(2010, 3), (2011, 3)])]))
+  /// let qdict=QGEN::new_dictionary(QGEN::new_int_list(Attribute::Sorted, vec![100, 200, 300]), QGEN::new_mixed_list(vec![QGEN::new_char_list(Attribute::None, "super.firstderivatives.com"), QGEN::new_float(4.0), QGEN::new_month_list_ym(Attribute::None, vec![(2010, 3), (2011, 3)])]))
   /// ```
+  /// There is a macro for this constructor. See [`q_dictionary`](../macro.q_dictionary.html).
   pub fn new_dictionary(key: Q, value: Q) -> Q{
     Q::Dictionary(QDictionary{
       key: Box::new(key),
@@ -1417,6 +2946,7 @@ impl QGEN{
   ///   ]
   /// ).unwrap();
   /// ```
+  /// There is a macro for this constructor. See [`q_table`](../macro.q_table.html).
   pub fn new_table<T: ToString>(col: Vec<T>, value: Vec<Q>) -> io::Result<Q>{
     if col.len()!=value.len(){
       return Err(io::Error::from(QError::OtherError(Box::leak(format!("Length of header doesn't match the length of columns: {} and {}", col.len(), value.len()).into_boxed_str()))));
@@ -1450,9 +2980,11 @@ impl QGEN{
   ///   vec!["area_skm", "population"],
   ///   vec![
   ///     QGEN::new_int_list(Attribute::None, vec![13500, 17300, 1740]),
-  ///     QGEN::new_long_list(Attribute::None, vec![37400000_i64, 9046000, 18819000]),
+  ///     QGEN::new_long_list(Attribute::None, vec![37400000_i64, 9046000, 18819000])
   ///   ]
   /// ).unwrap();
+  /// ```
+  /// There is a macro for this constructor. See [`q_keyed_table`](../macro.q_keyed_table.html).
   pub fn new_keyed_table<T: ToString>(keyheader: Vec<T>, keydata: Vec<Q>, valueheader: Vec<T>, valuedata: Vec<Q>) -> io::Result<Q>{
     Ok(Q::KeyedTable(QKeyedTable{
       keytab: Box::new(QGEN::new_table(keyheader, keydata)?),
@@ -1483,6 +3015,7 @@ impl QGEN{
   /// // "안녕."
   /// println!("{}", response);
   ///```
+  /// There is a macro for this constructor. See [`q_general_null`](../macro.q_general_null.html).
   pub fn new_general_null() -> Q{
     Q::GeneralNull(QGeneralNull{})
   }
@@ -1925,7 +3458,7 @@ impl fmt::Display for Q{
       Q::Timestamp(t) => write!(f, "{}", format_timestamp(t, Q_0Np, Q_0Wp, "%Y.%m.%dD%H:%M:%S%.9f")),
       Q::Month(m) => write!(f, "{}", format_month(m, false)),
       Q::Date(d) => write!(f, "{}", format_date(d)),
-      Q::Datetime(d) => write!(f, "{}", format_timestamp(d, Q_0Nz, Q_0Wz, "%Y.%m.%dT%H:%M:%S%.3f")), 
+      Q::Datetime(d) => write!(f, "{}", format_timestamp(d, Q_0Nz, *Q_0Wz, "%Y.%m.%dT%H:%M:%S%.3f")), 
       Q::Timespan(t) => write!(f, "{}", format_timespan(t)),
       Q::Minute(m) => write!(f, "{}", format_time(m, "%H:%M")),
       Q::Second(s) => write!(f, "{}", format_time(s, "%H:%M:%S")),
@@ -1943,7 +3476,7 @@ impl fmt::Display for Q{
       Q::TimestampL(ql) => {write_enlist!(f, ql); write_simple_qlist!(f, ql, |item|{format_timestamp(item, Q_0Np, Q_0Wp, "%Y.%m.%dD%H:%M:%S%.9f")}, "")},
       Q::MonthL(ql) => {write_enlist!(f, ql); write_simple_qlist!(f, ql, |item|{format_month(item, true)}, "m")},
       Q::DateL(ql) => {write_enlist!(f, ql); write_simple_qlist!(f, ql, |item|{format_date(item)}, "")},
-      Q::DatetimeL(ql) => {write_enlist!(f, ql); write_simple_qlist!(f, ql, |item|{format_timestamp(item, Q_0Nz, Q_0Wz, "%Y.%m.%dT%H:%M:%S%.3f")}, "")},
+      Q::DatetimeL(ql) => {write_enlist!(f, ql); write_simple_qlist!(f, ql, |item|{format_timestamp(item, Q_0Nz, *Q_0Wz, "%Y.%m.%dT%H:%M:%S%.3f")}, "")},
       Q::TimespanL(ql) => {write_enlist!(f, ql); write_simple_qlist!(f, ql, |item|{format_timespan(item)}, "")},
       Q::MinuteL(ql) => {write_enlist!(f, ql); write_simple_qlist!(f, ql, |item|{format!("{}", format_time(item, "%H:%M"))}, "")},
       Q::SecondL(ql) => {write_enlist!(f, ql); write_simple_qlist!(f, ql, |item|{format!("{}", format_time(item, "%H:%M:%S"))}, "")},
@@ -2039,8 +3572,8 @@ impl Q{
   /// Convert `Q` object into `i32`. Original `Q` object is consumed.
   ///  There are six compatible types with `i32`:
   /// - `Q::Int`: returns underlying `i32` object.
-  /// - `Q::Month`: returns the number of months from `1970.01.01`
-  /// - `Q::Date`: returns the number of days from `1970.01.01`
+  /// - `Q::Month`: returns the number of months since `1970.01.01`
+  /// - `Q::Date`: returns the number of days since `1970.01.01`
   /// - `Q::Minute`: returns the elapsed time in minutes from `00:00:00`
   /// - `Q::Second`: returns the elapsed time in seconds from `00:00:00`
   /// - `Q::Time`: returns the elapsed time in milliseconds from `00:00:00.000`
@@ -2102,7 +3635,7 @@ impl Q{
   /// Convert `Q` object into `i64`. Original `Q` object is consumed.
   ///  There are three compatible types with `i64`:
   /// - `Q::Long`: returns underlying `i64` object.
-  /// - `Q::Timestamp`: returns the elapsed time in nanoseconds from `1970.01.01D00:00:00.000000000`
+  /// - `Q::Timestamp`: returns the elapsed time in nanoseconds since `1970.01.01D00:00:00.000000000`
   /// - `Q::Timespan`: returns nanoseconds
   /// # Example
   /// ```
@@ -2153,7 +3686,7 @@ impl Q{
   /// Convert `Q` object into `f64`. Original `Q` object is consumed.
   ///  There are two compatible types with `f64`:
   /// - `Q::Float`: returns underlying `f64` object.
-  /// - `Q::Datetime`: returns the number of days from `1970.01.01` measured with millisecond.
+  /// - `Q::Datetime`: returns the number of days since `1970.01.01` measured with millisecond.
   /// # Example
   /// ```
   /// #[macro_use]
@@ -2447,8 +3980,8 @@ impl Q{
   /// Convert `Q` object into a tuple of `(Attribute, Vec<i32>)`. Original `Q` object is consumed.
   ///  There are six compatible types with `i32`: 
   /// - `Q::IntL`: returns underlying `i32` objects
-  /// - `Q::MonthL`: returns the number of months from `1970.01.01`
-  /// - `Q::DateL`: returns the number of days from `1970.01.01`
+  /// - `Q::MonthL`: returns the number of months since `1970.01.01`
+  /// - `Q::DateL`: returns the number of days since `1970.01.01`
   /// - `Q::MinuteL`: returns the elapsed time in minutes from `00:00:00`
   /// - `Q::SecondL`: returns the elapsed time in seconds from `00:00:00`
   /// - `Q::TimeL`: returns the elapsed time in milliseconds from `00:00:00.000`
@@ -2528,7 +4061,7 @@ impl Q{
   /// Convert `Q` object into a tuple of `(Attribute, Vec<i64>)`. Original `Q` object is consumed.
   ///  There are three compatible types with `i64`:
   /// - `Q::LongL`: returns underlying `i64` objects
-  /// - `Q::TimestampL`: returns the elapsed time in nanoseconds from `1970.01.01D00:00:00.000000000`
+  /// - `Q::TimestampL`: returns the elapsed time in nanoseconds since `1970.01.01D00:00:00.000000000`
   /// - `Q::TimespanL`: returns nanoseconds
   /// # Example
   /// ```
@@ -2613,7 +4146,7 @@ impl Q{
   /// Convert `Q` object into a tuple of `(Attribute, Vec<f64>)`. Original `Q` object is consumed.
   ///  There are two compatible types with `f64`:
   /// - `Q::FloatL`: returns underlying `f64` objects
-  /// - `Q::DatetimeL`: returns the number of days from `1970.01.01` measured with millisecond
+  /// - `Q::DatetimeL`: returns the number of days since `1970.01.01` measured with millisecond
   /// # Example
   /// ```
   /// #[macro_use]

@@ -1,8 +1,8 @@
 // send_query.rs
 
 /*
-* This file demostrates examples of how to use a function to send a functional query
-* and how to retrieve underlying value of q object.
+* This file demostrates how to use the function to send a functional query
+* and how to retrieve an underlying value of q object.
 */
 
 use rustkdb::connection::*;
@@ -14,9 +14,12 @@ use rand::seq::SliceRandom;
 
 #[tokio::main]
 async fn main() -> io::Result<()>{
+
+  // Connect to q process with 1 second timeout and 200 milliseconds retry interval
   let mut handle=connect("localhost", 5000, "kdbuser:pass", 1000, 200).await.expect("Failed to connect");
 
-  // Set remote dyadic function 'pow'
+  // Set remote dyadic function 'pow' by an asynchronous message
+  // "_le" means Little Endian
   send_string_query_async_le(&mut handle, "pow:{[base; ex] base xexp ex}").await?;
 
   // Random generator
@@ -28,13 +31,14 @@ async fn main() -> io::Result<()>{
   let res_long=send_query_le(&mut handle, QGEN::new_mixed_list(vec![QGEN::new_symbol("pow"), QGEN::new_long(b), QGEN::new_int(e)])).await?;
   println!("pow[{}; {}] = {:.4}", b, e, res_long);
   
-  // Set remote table 'trade'
+  // Set remote table 'trade' by an asynchronous message
   send_string_query_async_le(&mut handle, "trade:flip `time`sym`price`size`country!\"psfjs\"$\\:()").await?;
   send_string_query_async_le(&mut handle, "upd:upsert").await?;
 
   let syms = ["Apple", "Banana", "Coconut"];  
   let countries=["Equ", "Phi", "Cal"];
 
+  // Send data asynchronously
   for _ in 0_u8 .. 10{
     send_query_async_le(&mut handle, QGEN::new_mixed_list(vec![
       QGEN::new_symbol("upd"),
@@ -49,12 +53,13 @@ async fn main() -> io::Result<()>{
     ])).await?;
   }
 
-  // Get the value of 'trade'
+  // Get the value of 'trade' (synchronous call)
   let trade=send_string_query_le(&mut handle, "trade").await?;
   println!("{}", trade);
 
   // Set remote dictionary 'dict'
   send_string_query_async_le(&mut handle, "dict:enlist[`]!enlist (::)").await?;
+
   // Update 'dict'
   send_query_async_le(&mut handle, QGEN::new_mixed_list(
     vec![
@@ -93,6 +98,8 @@ async fn main() -> io::Result<()>{
   // 0w
   assert!(rust_value[3].clone().into_f64()?.is_infinite());
 
+  // Close the handle
+  close(&mut handle).await?;
 
   Ok(())
 }

@@ -148,7 +148,7 @@ impl MsgHeader{
     Ok(header)
   }
   
-  // Get encoding from the header
+  // Get encoding from the eader
   #[allow(dead_code)]
   pub(crate) fn get_encode(&self) -> u8{
     self.encode
@@ -161,7 +161,7 @@ impl MsgHeader{
     self
   }
 
-  // Get encoding from the eader
+  // Get encoding from the header
   #[allow(dead_code)]
   pub(crate) fn get_msg_type(&self) -> u8{
     self.msg_type
@@ -240,7 +240,7 @@ async fn try_connect(addr: &SocketAddr, timeout_millis: u64, trial_interval: u64
         eprintln!("retry to connect...");
         if (Utc::now() - now).num_milliseconds() as u64 > timeout_millis{
           // Timeout
-          return Err(io::Error::new(io::ErrorKind::ConnectionRefused, "Connection timeout"));
+          return Err(io::Error::new(io::ErrorKind::TimedOut, "Connection timeout"));
         }
         interval.tick().await;
       }
@@ -270,7 +270,7 @@ async fn try_connect(addr: &SocketAddr, timeout_millis: u64, trial_interval: u64
 */
 async fn connect_tcp(host: &str, port: i32, timeout_millis: u64, trial_interval: u64) -> io::Result<TcpStream>{
 
-  // DNS system resolver
+  // DNS system resolver (should not fail)
   let resolver=AsyncResolver::tokio_from_system_conf().await.expect("Failed to create a resolver");
 
   // Resolve the given hostname
@@ -279,16 +279,19 @@ async fn connect_tcp(host: &str, port: i32, timeout_millis: u64, trial_interval:
     // For DEBUG
     // println!("Got IP adress: {}", ans);
     let hostport=format!("{}:{}", ans, port);
-    let addr=hostport.parse::<SocketAddr>().expect("Could not parse hostport");
-
-    // Return if this IP address is valid
-    if let Ok(h)=try_connect(&addr, timeout_millis, trial_interval).await{
-      return Ok(h);
+    // Propagate parse error if any
+    if let Ok(addr)=hostport.parse::<SocketAddr>(){
+      // Return if this IP address is valid
+      if let Ok(h)=try_connect(&addr, timeout_millis, trial_interval).await{
+        return Ok(h);
+      }
     }
+    else{
+      return Err(io::Error::new(io::ErrorKind::Other, format!("Could not parse host port: {}", hostport)));
+    }    
   }
 
-  Err(io::Error::new(io::ErrorKind::ConnectionRefused, "Could not find any available endpoint for TCP connection."))
-  
+  Err(io::Error::new(io::ErrorKind::ConnectionRefused, format!("Could not find any available endpoint for TCP connection for {}.", host)))
 }
 
 /// Connect to q process running on specified `host` and `port` and credential `username:password`.
@@ -314,16 +317,18 @@ pub async fn connect(host: &str, port: i32, credential: &str, timeout_millis: u6
   
   // Send credential
   let credential=credential.to_string()+"\x03\x00";
-  handle.write_all(credential.as_bytes()).await.expect("Failed to send handshake");
-  handle.flush().await.expect("Failed to flush"); 
+  if let Err(err)=handle.write_all(credential.as_bytes()).await{
+    return Err(Box::new(io::Error::new(tokio::io::ErrorKind::BrokenPipe, format!("Failed to send handshake: {}", err))));
+  }
+  if let Err(err)=handle.flush().await{
+    return Err(Box::new(io::Error::new(tokio::io::ErrorKind::BrokenPipe, format!("Failed to flush a sender handle: {}", err))));
+  }
 
   // Placeholder of common capablility
   let mut cap= [0u8;1];
-  handle.read_exact(&mut cap).await.expect("Failed to read handshake responce");
-  
-  // If returned capacity is 0 it is an error
-  if cap[0] == 0{
-    return Err(Box::new(io::Error::new(io::ErrorKind::ConnectionAborted, "Authentication Failure")));
+  if let Err(_)=handle.read_exact(&mut cap).await{
+    // Connection is closed in case of authentication failure
+    return Err(Box::new(io::Error::new(tokio::io::ErrorKind::ConnectionAborted, "Authentication failure.")));
   }
 
   Ok(handle)
@@ -356,19 +361,51 @@ pub async fn connect_tls(host: &str, port: i32, credential: &str, timeout_millis
   
   // Send credential
   let credential=credential.to_string()+"\x03\x00";
-  handle.write_all(credential.as_bytes()).await.expect("Failed to send handshake");
-  handle.flush().await.expect("Failed to flush"); 
+  if let Err(err)=handle.write_all(credential.as_bytes()).await{
+    return Err(Box::new(io::Error::new(tokio::io::ErrorKind::BrokenPipe, format!("Failed to send handshake: {}", err))));
+  }
+  if let Err(err)=handle.flush().await{
+    return Err(Box::new(io::Error::new(tokio::io::ErrorKind::BrokenPipe, format!("Failed to flush a sender handle: {}", err))));
+  }
 
   // Placeholder of common capablility
   let mut cap= [0u8;1];
-  handle.read_exact(&mut cap).await.expect("Failed to read handshake responce");
-  
-  // If returned capacity is 0 it is an error
-  if cap[0] == 0{
-    return Err(Box::new(io::Error::new(io::ErrorKind::ConnectionAborted, "Authentication Failure")));
+  if let Err(_)=handle.read_exact(&mut cap).await{
+    // Connection is closed in case of authentication failure
+    return Err(Box::new(io::Error::new(tokio::io::ErrorKind::ConnectionAborted, "Authentication failure.")));
   }
 
   Ok(handle)
+}
+
+/// Close a handle to a q process.
+/// # Example
+/// ```
+/// use rustkdb::connection::*;
+/// 
+/// // Open connection to a q process
+/// let mut handle=connect("localhost", 5000, "kdbuser:pass", 0, 0).await.expect("Failed to connect");
+/// 
+/// // Close the handle
+/// close(&mut handle).await?;
+/// ```
+pub async fn close(handle: &mut TcpStream) -> io::Result<()>{
+  handle.shutdown().await
+}
+
+/// Close a handle to a q process which is connected over TLS.
+/// # Example
+/// ```
+/// use rustkdb::connection::*;
+/// 
+/// // Open connection to a q process
+/// let mut handle=connect_tls("localhost", 5000, "kdbuser:pass", 0, 0).await.expect("Failed to connect");
+/// 
+/// // Close the handle
+/// close_tls(&mut handle).await?;
+/// ```
+pub async fn close_tls(handle: &mut TlsStream<TcpStream>) -> io::Result<()>{
+  handle.shutdown().await
 }
 
 //%% Send Data %%//vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv/
@@ -381,23 +418,29 @@ pub async fn connect_tls(host: &str, port: i32, credential: &str, timeout_millis
 * @param
 * buf: buffer to read header. This will be shadowed to read body.
 */ 
-async fn recieve_response<T>(reader: &mut T, buf: &mut Vec<u8>) -> (MsgHeader, Vec<u8>)
+async fn recieve_response<T>(reader: &mut T, buf: &mut Vec<u8>) -> io::Result<(MsgHeader, Vec<u8>)>
 where T: AsyncReadExt + AsyncBufRead + Unpin{
 
   // Read header
-  reader.read_exact(buf).await.expect("Failed to receive the header");
+  if let Err(err)=reader.read_exact(buf).await{
+    // The expected message is header or EOF (close due to q process failureresulting from bad query)
+    return Err(io::Error::new(tokio::io::ErrorKind::ConnectionAborted, format!("Connection dropped: {}", err)));
+  }
 
-  // Parse message header
-  let msg_header=MsgHeader::from_bytes(buf).await.expect("Failed to deserialize header");
+  // Parse message header (should not fail)
+  let msg_header=MsgHeader::from_bytes(buf).await?;
 
   // Read body
   let body_length=msg_header.get_length() as usize-MsgHeader::size();
   let mut buf=vec![0u8; body_length];
-  reader.read_exact(&mut buf).await.expect("Failed to receive the body");
+  if let Err(err)=reader.read_exact(&mut buf).await{
+    // Fails if q process fails before reading the body
+    return Err(io::Error::new(tokio::io::ErrorKind::UnexpectedEof, format!("Failed to read body of message: {}", err)));
+  }
 
   match msg_header.get_compressed(){
-    0x01 => (msg_header, compression::decompress(buf.as_slice(), msg_header.get_encode()).await),
-    _ => (msg_header, buf)    
+    0x01 => Ok((msg_header, compression::decompress(buf.as_slice(), msg_header.get_encode()).await)),
+    _ => Ok((msg_header, buf)) 
   }
 
 }
@@ -410,8 +453,9 @@ where T: AsyncReadExt + AsyncBufRead + Unpin{
 * reader: BufReader to read underlying bytes response
 * @param
 * header: Header of response. Used to get encode information in it.
+*
+* The underlying buffer is the bytes read from a handle and so is independent of connection
 */
-// Check if response is q error (`QError`); otherwise return Ok(q object)
 async fn inspect_response(reader: &mut BufReader<&[u8]>, header: MsgHeader) -> io::Result<qtype::Q>{
 
     // Pick up the first byte and see if it is error
@@ -420,7 +464,7 @@ async fn inspect_response(reader: &mut BufReader<&[u8]>, header: MsgHeader) -> i
     if vectype == qtype::Q_ERROR{
       // Return q process error
       let mut err=String::new();
-      reader.read_to_string(&mut err).await.expect("Failed to parse error message");
+      reader.read_to_string(&mut err).await?;
       return Err(error::QError::QProcessError(Box::leak(err.into_boxed_str())).into());
     }
     else{
@@ -475,9 +519,13 @@ async fn send_string_query_inner<T>(handle: &mut T, msg_type: MessageType, msg: 
   // message
   message.extend(msg.as_bytes());
   // Send data
-  writer.write_all(&message).await.expect("Failed to send body");  
+  if let Err(err)=writer.write_all(&message).await{
+    return Err(io::Error::new(tokio::io::ErrorKind::BrokenPipe, format!("Failed to send a text query: {}", err)));
+  }
   // Flush
-  writer.flush().await.expect("Failed to flush");
+  if let Err(err) = writer.flush().await{
+    return Err(io::Error::new(tokio::io::ErrorKind::BrokenPipe, format!("Failed to flush a sender handle: {}", err)));
+  }
 
   Ok(())
 }
@@ -501,7 +549,7 @@ async fn send_string_query<T>(handle: &mut T, msg: &str, encode: Encode) -> io::
   // Receive data
   let mut reader=BufReader::new(handle);
   let mut body: Vec<u8>=vec![0u8; MsgHeader::size()];
-  let (msg_header, body) = recieve_response(&mut reader, &mut body).await;
+  let (msg_header, body) = recieve_response(&mut reader, &mut body).await?;
 
   // Prepare a new reader of response
   let mut reader=BufReader::new(body.as_slice());
@@ -631,9 +679,13 @@ async fn send_query_inner<T>(handle: &mut T, msg_type: MessageType, query: qtype
   let mut writer=BufWriter::new(handle);
 
   // Send data
-  writer.write_all(&message).await.expect("Failed to send header");
+  if let Err(err)=writer.write_all(&message).await{
+    return Err(io::Error::new(tokio::io::ErrorKind::BrokenPipe, format!("Failed to send a query: {}", err)));
+  }
   // Flush
-  writer.flush().await.expect("Failed to flush");
+  if let Err(err) = writer.flush().await{
+    return Err(io::Error::new(tokio::io::ErrorKind::BrokenPipe, format!("Failed to flush a sender handle: {}", err)));
+  }
 
   Ok(())
 }
@@ -656,7 +708,7 @@ async fn send_query<T>(handle: &mut T, query: qtype::Q, encode: Encode) -> io::R
   // Receive data
   let mut reader=BufReader::new(handle);
   let mut body: Vec<u8>=vec![0u8; MsgHeader::size()]; 
-  let (msg_header, body) = recieve_response(&mut reader, &mut body).await;
+  let (msg_header, body) = recieve_response(&mut reader, &mut body).await?;
 
   // Prepare a new reader of response
   let mut reader=BufReader::new(body.as_slice());

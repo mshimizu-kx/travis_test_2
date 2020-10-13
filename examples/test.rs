@@ -16,6 +16,8 @@
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 
 #[macro_use]
+extern crate rustkdb;
+#[macro_use]
 extern crate float_cmp;
 
 use rustkdb::connection::*;
@@ -179,6 +181,31 @@ async fn main() -> Result<(), io::Error>{
   success_failure.push(list_constructor_test()?);
   execution_time.push(("list constructor", Utc::now()-now));
 
+  // Atom Macro test
+  let now=Utc::now();
+  success_failure.push(atom_macro_test()?);
+  execution_time.push(("atom macro", Utc::now()-now));
+
+  // List Macro test
+  let now=Utc::now();
+  success_failure.push(list_macro_test()?);
+  execution_time.push(("list macro", Utc::now()-now));
+
+  // Table Macro test
+  let now=Utc::now();
+  success_failure.push(table_macro_test()?);
+  execution_time.push(("table macro", Utc::now()-now));
+
+  // Dictionary Macro test
+  let now=Utc::now();
+  success_failure.push(dictionary_macro_test()?);
+  execution_time.push(("dictionary macro", Utc::now()-now));
+
+  // Keyed Table Macro test
+  let now=Utc::now();
+  success_failure.push(keyed_table_macro_test()?);
+  execution_time.push(("keyed_table macro", Utc::now()-now));
+
   // Atom Conversion test
   let now=Utc::now();
   success_failure.push(atom_conversion_test()?);
@@ -209,7 +236,7 @@ async fn main() -> Result<(), io::Error>{
   success_failure.push(compression_test(&mut handle).await?);
   execution_time.push(("compression", Utc::now()-now));
 
-  // Display Result
+  // Display Result Table
   println!("\n+{:-^70}+\n", "|| Test Result ||");
   println!("{:^30} | {:^20} | {:^6} | {:^6}", "Item", "Time (nanosecond)", "Pass", "Fail");
   println!("{:-^30} | {:-^20} | {:-^6} | {:-^6}" , "-", "-", "-", "-");
@@ -217,6 +244,20 @@ async fn main() -> Result<(), io::Error>{
     println!("{:^30} | {:>20} | {:>6} | {:>6}", item, time.num_nanoseconds().unwrap(), success, failure);
   }
   
+  // Display ok or FAILED
+  let mut num_success=0_u32;
+  let mut num_failure=0_u32;
+  for (success, failure) in success_failure{
+    num_success+=success;
+    num_failure+=failure;
+  }
+  let result=if num_failure > 0{
+    "FAILED"
+  }
+  else{
+    "ok"
+  };
+  println!("\ntest result: {}. {} passed; {} failed; 0 ignored; 0 measured; 0 filtered out", result, num_success, num_failure);
  
   Ok(())
 
@@ -998,7 +1039,7 @@ async fn deserialize_null_infinity_test(handle: &mut TcpStream) -> io::Result<(u
 
   let res_infinity=send_string_query_le(handle, "(0Wh; -0Wh; 0Wi; -0Wi; 0Wj; -0Wj; 0Wp; 0Wm; 0Wd; 0Wz; 0Wn; -0Wn; 0Wu; 0Wv; 0Wt)").await?;
   assert_to_truefalse!(res_infinity, QGEN::new_mixed_list(vec![
-    QGEN::new_short(Q_0Wh), QGEN::new_short(Q_NEG_0Wh), QGEN::new_int(Q_0Wi), QGEN::new_int(Q_NEG_0Wi), QGEN::new_long(Q_0Wj), QGEN::new_long(Q_NEG_0Wj), QGEN::new_timestamp(Q_0Wp), QGEN::new_month(Q_0Wm), QGEN::new_date(Q_0Wd), QGEN::new_datetime(Q_0Wz), QGEN::new_timespan(*Q_0Wn), QGEN::new_timespan(*Q_NEG_0Wn), QGEN::new_minute(Q_0Wu), QGEN::new_second(Q_0Wv), QGEN::new_time(Q_0Wt)
+    QGEN::new_short(Q_0Wh), QGEN::new_short(Q_NEG_0Wh), QGEN::new_int(Q_0Wi), QGEN::new_int(Q_NEG_0Wi), QGEN::new_long(Q_0Wj), QGEN::new_long(Q_NEG_0Wj), QGEN::new_timestamp(Q_0Wp), QGEN::new_month(Q_0Wm), QGEN::new_date(Q_0Wd), QGEN::new_datetime(*Q_0Wz), QGEN::new_timespan(*Q_0Wn), QGEN::new_timespan(*Q_NEG_0Wn), QGEN::new_minute(Q_0Wu), QGEN::new_second(Q_0Wv), QGEN::new_time(Q_0Wt)
   ]), num_success, num_failure);
 
   print!("<<{:^50}>>", "decimal infinity");
@@ -1056,11 +1097,11 @@ async fn serialize_null_infinity_test(handle: &mut TcpStream) -> io::Result<(u32
 
   let res_infinity=send_query_le(handle, QGEN::new_mixed_list(vec![QGEN::new_general_null(),
     QGEN::new_mixed_list(vec![
-      QGEN::new_short(Q_0Wh), QGEN::new_short(Q_NEG_0Wh), QGEN::new_int(Q_0Wi), QGEN::new_int(Q_NEG_0Wi), QGEN::new_long(Q_0Wj), QGEN::new_long(Q_NEG_0Wj), QGEN::new_timestamp(Q_0Wp), QGEN::new_month(Q_0Wm), QGEN::new_date(Q_0Wd), QGEN::new_datetime(Q_0Wz), QGEN::new_timespan(*Q_0Wn), QGEN::new_timespan(*Q_NEG_0Wn), QGEN::new_minute(Q_0Wu), QGEN::new_second(Q_0Wv), QGEN::new_time(Q_0Wt)
+      QGEN::new_short(Q_0Wh), QGEN::new_short(Q_NEG_0Wh), QGEN::new_int(Q_0Wi), QGEN::new_int(Q_NEG_0Wi), QGEN::new_long(Q_0Wj), QGEN::new_long(Q_NEG_0Wj), QGEN::new_timestamp(Q_0Wp), QGEN::new_month(Q_0Wm), QGEN::new_date(Q_0Wd), QGEN::new_datetime(*Q_0Wz), QGEN::new_timespan(*Q_0Wn), QGEN::new_timespan(*Q_NEG_0Wn), QGEN::new_minute(Q_0Wu), QGEN::new_second(Q_0Wv), QGEN::new_time(Q_0Wt)
     ])
   ])).await?;
   assert_to_truefalse!(res_infinity, QGEN::new_mixed_list(vec![
-    QGEN::new_short(Q_0Wh), QGEN::new_short(Q_NEG_0Wh), QGEN::new_int(Q_0Wi), QGEN::new_int(Q_NEG_0Wi), QGEN::new_long(Q_0Wj), QGEN::new_long(Q_NEG_0Wj), QGEN::new_timestamp(Q_0Wp), QGEN::new_month(Q_0Wm), QGEN::new_date(Q_0Wd), QGEN::new_datetime(Q_0Wz), QGEN::new_timespan(*Q_0Wn), QGEN::new_timespan(*Q_NEG_0Wn), QGEN::new_minute(Q_0Wu), QGEN::new_second(Q_0Wv), QGEN::new_time(Q_0Wt)
+    QGEN::new_short(Q_0Wh), QGEN::new_short(Q_NEG_0Wh), QGEN::new_int(Q_0Wi), QGEN::new_int(Q_NEG_0Wi), QGEN::new_long(Q_0Wj), QGEN::new_long(Q_NEG_0Wj), QGEN::new_timestamp(Q_0Wp), QGEN::new_month(Q_0Wm), QGEN::new_date(Q_0Wd), QGEN::new_datetime(*Q_0Wz), QGEN::new_timespan(*Q_0Wn), QGEN::new_timespan(*Q_NEG_0Wn), QGEN::new_minute(Q_0Wu), QGEN::new_second(Q_0Wv), QGEN::new_time(Q_0Wt)
   ]), num_success, num_failure);
 
   print!("<<{:^50}>>", "float infinity");
@@ -1847,6 +1888,7 @@ fn atom_constructor_test() -> io::Result<(u32, u32)>{
   Ok((num_success, num_failure))
 }
 
+
 /*
 * Test various list constructors of each q type object if they provide the same value as each other.
 * Note: Basic constructors have been tested in the tests above. The focus of this test is the other
@@ -2002,6 +2044,622 @@ fn list_constructor_test() -> io::Result<(u32, u32)>{
   let q_time_list5=QGEN::new_time_list_millis(Attribute::None, vec![Q_0Ni, Q_0Wi]);
   let q_time_list6=QGEN::new_time_list(Attribute::None, vec![Q_0Nt, Q_0Wt]);
   assert_to_truefalse!(q_time_list5, q_time_list6, num_success, num_failure);
+
+  Ok((num_success, num_failure))
+}
+
+/*
+* Test various atom macros of each q type object if they provide the same value as each other.
+*/
+fn atom_macro_test() -> io::Result<(u32, u32)>{
+  println!("\n+{:-^70}+\n", "|| Atom Macro ||");
+
+  let mut num_success: u32=0;
+  let mut num_failure: u32=0;
+
+  // Bool //-------------------------------------------/
+  print!("<<{:^50}>>", "bool");
+
+  let qbool=QGEN::new_bool(false);
+  let qbool2=q_bool![false];
+  assert_to_truefalse!(qbool, qbool2, num_success, num_failure);
+
+  // GUID //-------------------------------------------/
+  print!("<<{:^50}>>", "GUID");
+
+  let qGUID=QGEN::new_GUID([0x5a, 0xe7, 0x96, 0x2d, 0x49, 0xf2, 0x40, 0x4d, 0x5a, 0xec, 0xf7, 0xc8, 0xab, 0xba, 0xe2, 0x88]);
+  let qGUID2=q_GUID![[0x5a, 0xe7, 0x96, 0x2d, 0x49, 0xf2, 0x40, 0x4d, 0x5a, 0xec, 0xf7, 0xc8, 0xab, 0xba, 0xe2, 0x88]];
+  assert_to_truefalse!(qGUID, qGUID2, num_success, num_failure);
+
+  // Byte //-------------------------------------------/
+  print!("<<{:^50}>>", "byte");
+
+  let qbyte=QGEN::new_byte(0xa7);
+  let qbyte2=q_byte![0xa7];
+  assert_to_truefalse!(qbyte, qbyte2, num_success, num_failure);
+
+  // Short //------------------------------------------/
+  print!("<<{:^50}>>", "short");
+
+  let qshort=QGEN::new_short(-1024_i16);
+  let qshort2=q_short![-1024_i16];
+  assert_to_truefalse!(qshort, qshort2, num_success, num_failure);
+
+  // Int //--------------------------------------------/
+  print!("<<{:^50}>>", "int");
+
+  let qint=QGEN::new_int(392452);
+  let qint2=q_int![392452];
+  assert_to_truefalse!(qint, qint2, num_success, num_failure);
+
+  // Long //-------------------------------------------/
+  print!("<<{:^50}>>", "long");
+
+  let qlong=QGEN::new_long(-3622501337297584128_i64);
+  let qlong2=q_long![-3622501337297584128_i64];
+  assert_to_truefalse!(qlong, qlong2, num_success, num_failure);
+
+  // Real //-------------------------------------------/
+  print!("<<{:^50}>>", "real");
+
+  let qreal=QGEN::new_real(1.23_f32);
+  let qreal2=q_real![1.23_f32];
+  assert_to_truefalse!(qreal, qreal2, num_success, num_failure);
+
+  // Float //------------------------------------------/
+  print!("<<{:^50}>>", "float");
+
+  let qfloat=q_float![103.2342];
+  assert_to_truefalse_float!(qfloat.into_f64().expect("Failed to convert into f64"), 103.2342, 0.0001, num_success, num_failure);
+
+  // Char //-------------------------------------------/
+  print!("<<{:^50}>>", "char");
+
+  let qchar=QGEN::new_char('+');
+  let qchar2=q_char!['+'];
+  assert_to_truefalse!(qchar, qchar2, num_success, num_failure);
+
+  // Symbol //-----------------------------------------/
+  print!("<<{:^50}>>", "symbol");
+
+  let qsymbol=QGEN::new_symbol("🐉");
+  let qsymbol2=q_symbol!["🐉"];
+  assert_to_truefalse!(qsymbol, qsymbol2, num_success, num_failure);
+
+  // Timestamp //--------------------------------------/
+  print!("<<{:^50}>>", "timestamp from DateTime<Utc>");
+
+  // Base
+  let qtimestamp=QGEN::new_timestamp(Utc.ymd(2020, 4, 1).and_hms_nano(3, 50, 12, 1234));
+  let qtimestamp2=q_timestamp!["datetime"; Utc.ymd(2020, 4, 1).and_hms_nano(3, 50, 12, 1234)];
+  assert_to_truefalse!(qtimestamp, qtimestamp2, num_success, num_failure);
+
+  print!("<<{:^50}>>", "timestamp from nanosecond");
+
+  let qtimestamp3=q_timestamp!["nanos"; KDB_TIMESTAMP_OFFSET + 639028212000001234_i64];
+  assert_to_truefalse!(qtimestamp, qtimestamp3, num_success, num_failure);
+
+  print!("<<{:^50}>>", "timestamp from ymd_hms_nanos");
+
+  let qtimestamp4=q_timestamp!["ymd_hms_nanos"; 2020, 4, 1, 3, 50, 12, 1234];
+  assert_to_truefalse!(qtimestamp, qtimestamp4, num_success, num_failure);
+
+  // Month //------------------------------------------/
+  print!("<<{:^50}>>", "month from Date<Utc>");
+
+  // Base
+  let qmonth=QGEN::new_month_ym(2019, 8);
+
+  // Day should be supressed
+  let qmonth2=q_month![Utc.ymd(2019, 8, 15)];
+  assert_to_truefalse!(qmonth, qmonth2, num_success, num_failure);
+
+  print!("<<{:^50}>>", "month from ym");
+
+  let qmonth3=q_month![2019, 8];
+  assert_to_truefalse!(qmonth, qmonth3, num_success, num_failure);
+
+  // Date //------------------------------------------/
+  print!("<<{:^50}>>", "date from Date<Utc>");
+
+  // Base
+  let q_date=QGEN::new_date_ymd(2005, 5, 8);
+
+  let q_date2=QGEN::new_date(Utc.ymd(2005, 5, 8));
+  assert_to_truefalse!(q_date, q_date2, num_success, num_failure);
+
+  // Datetime //--------------------------------------/
+  print!("<<{:^50}>>", "datetime from millisecond");
+
+  // Base
+  let qdatetime=QGEN::new_datetime_ymd_hms_millis(2008, 2, 1, 2, 31, 25, 828);
+
+  let qdatetime2=q_datetime!["millis"; (KDB_DAY_OFFSET * ONE_DAY_MILLIS) + 255148285828_i64];
+  assert_to_truefalse!(qdatetime, qdatetime2, num_success, num_failure);
+
+  print!("<<{:^50}>>", "datetime from DateTime<Utc>");
+
+  let qdatetime3=q_datetime!["datetime"; Utc.ymd(2008, 2, 1).and_hms_milli(2, 31, 25, 828)];
+  assert_to_truefalse!(qdatetime, qdatetime3, num_success, num_failure);
+
+  print!("<<{:^50}>>", "datetime from ymd_hms_millis");
+
+  let qdatetime4=q_datetime!["ymd_hms_millis"; 2008, 2, 1, 2, 31, 25, 828];
+  assert_to_truefalse!(qdatetime, qdatetime4, num_success, num_failure);
+
+  // Timespan //--------------------------------------/
+  print!("<<{:^50}>>", "timespan from milliecond");
+
+  // Base
+  let qtimespan=QGEN::new_timespan_millis(172800000_i64);
+
+  let qtimespan2=q_timespan!["millis"; 172800000_i64];
+  assert_to_truefalse!(qtimespan, qtimespan2, num_success, num_failure);
+
+  print!("<<{:^50}>>", "timespan from nanosecond");
+
+  let qtimespan3=q_timespan!["nanos"; 172800000000000_i64];
+  assert_to_truefalse!(qtimespan, qtimespan3, num_success, num_failure);
+
+  print!("<<{:^50}>>", "timespan from Duration");
+
+  let qtimespan4=q_timespan!["duration"; Duration::nanoseconds(172800000000000_i64)];
+  assert_to_truefalse!(qtimespan, qtimespan4, num_success, num_failure);
+
+  // Minute //----------------------------------------/
+  print!("<<{:^50}>>", "minute from hm");
+
+  // Base
+  let qminute=QGEN::new_minute_hm(13, 4);
+
+  // 24:00 is supressed as 00:00
+  let qminute2=q_minute!["hm"; 13, 4];
+  assert_to_truefalse!(qminute, qminute2, num_success, num_failure);
+
+  print!("<<{:^50}>>", "minute from min");
+
+  // 24:00 is supressed as 00:00
+  let qminute3=q_minute!["min"; 2224];
+  assert_to_truefalse!(qminute, qminute3, num_success, num_failure);
+
+  print!("<<{:^50}>>", "minute from NaiveTime");
+
+  // Second is supressed
+  let qminute4=q_minute!["naivetime"; NaiveTime::from_hms(13, 4, 30)];
+  assert_to_truefalse!(qminute, qminute4, num_success, num_failure);
+
+  print!("<<{:^50}>>", "minute from QTime");
+
+  // Second is supressed
+  let qminute5=q_minute!["qtime"; QTimeGEN::new_minute(NaiveTime::from_hms(13, 4, 50))];
+  assert_to_truefalse!(qminute, qminute5, num_success, num_failure);
+
+  // Second //----------------------------------------/
+  print!("<<{:^50}>>", "second from hms");
+
+  // Base
+  let qsecond=QGEN::new_second_hms(8, 10, 2);
+
+  // 48:00:00 is supressed to 00:00:00
+  let qsecond2=q_second!["hms"; 8, 10, 2];
+  assert_to_truefalse!(qsecond, qsecond2, num_success, num_failure);
+
+  print!("<<{:^50}>>", "second from sec");
+
+  // 48:00:00 is supressed to 00:00:00
+  let qsecond3=q_second!["sec"; 202202];
+  assert_to_truefalse!(qsecond, qsecond3, num_success, num_failure);
+
+  print!("<<{:^50}>>", "second from NaiveTime");
+
+  // Millisecond is supressed
+  let qsecond4=q_second!["naivetime"; NaiveTime::from_hms_milli(8, 10, 2, 325)];
+  assert_to_truefalse!(qsecond, qsecond4, num_success, num_failure);
+
+  print!("<<{:^50}>>", "second from QTime");
+
+  // Millisecond is supressed
+  let qsecond5=q_second!["qtime"; QTimeGEN::new_second(NaiveTime::from_hms_milli(8, 10, 2, 325))];
+  assert_to_truefalse!(qsecond, qsecond5, num_success, num_failure);
+
+  // Time //------------------------------------------/
+  print!("<<{:^50}>>", "time from hms_millis");
+
+  // Base
+  let qtime=QGEN::new_time_hms_millis(20, 23, 25, 800);
+
+  // 24:00:00.000 is supressed to 00:00:00
+  let qtime2=q_time!["hms_millis"; 20, 23, 25, 800];
+  assert_to_truefalse!(qtime, qtime2, num_success, num_failure);
+
+  print!("<<{:^50}>>", "time from millisecond");
+
+  // 24:00:00.000 is supressed to 00:00:00
+  let qtime3=q_time!["millis"; 159805800];
+  assert_to_truefalse!(qtime, qtime3, num_success, num_failure);
+
+  print!("<<{:^50}>>", "time from NaiveTime");
+
+  // Precision under millisecond is supressed
+  let qtime4=q_time!["naivetime"; NaiveTime::from_hms_nano(20, 23, 25, 800123456)];
+  assert_to_truefalse!(qtime, qtime4, num_success, num_failure);
+
+  print!("<<{:^50}>>", "time from QTime");
+
+  // Precision under millisecond is supressed
+  let qtime5=q_time!["qtime"; QTimeGEN::new_time(NaiveTime::from_hms_nano(20, 23, 25, 800123456))];
+  assert_to_truefalse!(qtime, qtime5, num_success, num_failure);
+
+  Ok((num_success, num_failure))
+}
+
+/*
+* Test various list macros of each q type object if they provide the same value as each other.
+*/
+fn list_macro_test() -> io::Result<(u32, u32)>{
+  println!("\n+{:-^70}+\n", "|| List Constructor ||");
+
+  let mut num_success: u32=0;
+  let mut num_failure: u32=0;
+
+  // Bool //------------------------------------------/
+  print!("<<{:^50}>>", "bool");
+
+  let qbool_list=QGEN::new_bool_list(Attribute::Parted, vec![true, true, false]);
+  let qbool_list2=q_bool_list!['p'; vec![true, true, false]];
+  assert_to_truefalse!(qbool_list, qbool_list2, num_success, num_failure);
+
+  // GUID //------------------------------------------/
+  print!("<<{:^50}>>", "GUID");
+
+  let qGUID_list=QGEN::new_GUID_list(Attribute::None, vec![[0x8c, 0x6b, 0x8b, 0x64, 0x68, 0x15, 0x60, 0x84, 0x0a, 0x3e, 0x17, 0x84, 0x01, 0x25, 0x1b, 0x68], [0x5a, 0xe7, 0x96, 0x2d, 0x49, 0xf2, 0x40, 0x4d, 0x5a, 0xec, 0xf7, 0xc8, 0xab, 0xba, 0xe2, 0x88]]);
+  let qGUID_list2=q_GUID_list!['*'; vec![[0x8c, 0x6b, 0x8b, 0x64, 0x68, 0x15, 0x60, 0x84, 0x0a, 0x3e, 0x17, 0x84, 0x01, 0x25, 0x1b, 0x68], [0x5a, 0xe7, 0x96, 0x2d, 0x49, 0xf2, 0x40, 0x4d, 0x5a, 0xec, 0xf7, 0xc8, 0xab, 0xba, 0xe2, 0x88]]];
+  assert_to_truefalse!(qGUID_list, qGUID_list2, num_success, num_failure);
+
+  // Byte //------------------------------------------/
+  print!("<<{:^50}>>", "byte");
+
+  let qbyte_list=QGEN::new_byte_list(Attribute::None, vec![0x4b, 0x78, 0x53, 0x79, 0x73, 0x74, 0x65, 0x6d, 0x73]); 
+  let qbyte_list2=q_byte_list!['*'; vec![0x4b, 0x78, 0x53, 0x79, 0x73, 0x74, 0x65, 0x6d, 0x73]];
+  assert_to_truefalse!(qbyte_list, qbyte_list2, num_success, num_failure);
+
+  // Short //-----------------------------------------/
+  print!("<<{:^50}>>", "short");
+
+  let qshort_list=QGEN::new_short_list(Attribute::None, vec![10_i16, -30, 20]);
+  let qshort_list2=q_short_list!['*'; vec![10_i16, -30, 20]];
+  assert_to_truefalse!(qshort_list, qshort_list2, num_success, num_failure);
+
+  // Int //-------------------------------------------/
+  print!("<<{:^50}>>", "int");
+
+  let qint_list=QGEN::new_int_list(Attribute::Sorted, vec![-3429000, 120000]);
+  let qint_list2=q_int_list!['s'; vec![-3429000, 120000]];
+  assert_to_truefalse!(qint_list, qint_list2, num_success, num_failure);
+
+  // Long //------------------------------------------/
+  print!("<<{:^50}>>", "long");
+
+  let qlong_list=QGEN::new_long_list(Attribute::None, vec![42_i64]);
+  let qlong_list2=q_long_list!['*'; vec![42_i64]];
+  assert_to_truefalse!(qlong_list, qlong_list2, num_success, num_failure);
+
+  // Real //------------------------------------------/
+  print!("<<{:^50}>>", "real");
+
+  let qreal_list=QGEN::new_real_list(Attribute::None, vec![0.940909_f32, Q_0We, 2039.30499]);
+  let qreal_list2=q_real_list!['*'; vec![0.940909_f32, Q_0We, 2039.30499]];
+  assert_to_truefalse!(qreal_list, qreal_list2, num_success, num_failure);
+
+  // Float //-----------------------------------------/
+  print!("<<{:^50}>>", "float");
+
+  let qfloat_list=q_float_list!['*'; vec![-0.9, Q_NEG_0w, 1.0, -1.1, 1.2, Q_0n]];
+  let (_, rust_float_list)=qfloat_list.into_f64_vec()?;
+  assert_to_truefalse_custom!(||{
+    assert_eq!(rust_float_list[0], -0.9);
+    assert!(rust_float_list[1].is_infinite());
+    assert_eq!(rust_float_list[2..5], [1.0, -1.1, 1.2]);
+    assert!(rust_float_list[5].is_nan());
+  }, num_success, num_failure);
+
+  // Char //------------------------------------------/
+  print!("<<{:^50}>>", "char");
+
+  let qchar_list=QGEN::new_char_list(Attribute::Unique, "Joshua");
+  let qchar_list2=q_string!['u'; String::from("Joshua")];
+  assert_to_truefalse!(qchar_list, qchar_list2, num_success, num_failure);
+
+  // Symbol //----------------------------------------/
+  print!("<<{:^50}>>", "symbol");
+
+  let qsymbol_list=QGEN::new_symbol_list(Attribute::Unique, vec!["Last", "Derivatives"]);
+  let qsymbol_list2=q_symbol_list!['u'; vec![String::from("Last"), String::from("Derivatives")]];
+  assert_to_truefalse!(qsymbol_list, qsymbol_list2, num_success, num_failure);
+
+  // Timestamp //-------------------------------------/
+  print!("<<{:^50}>>", "timestamp from ymd_hms_nanos");
+
+  // Base
+  let qtimestamp_list=QGEN::new_timestamp_list_ymd_hms_nanos(Attribute::None, vec![(2020, 4, 1, 3, 50, 12, 000001234)]);
+  let qtimestamp_list2=q_timestamp_list!["ymd_hms_nanos"; '*'; vec![(2020, 4, 1, 3, 50, 12, 000001234)]];
+  assert_to_truefalse!(qtimestamp_list, qtimestamp_list2, num_success, num_failure);
+
+  print!("<<{:^50}>>", "timestamp from nanosecond");
+
+  let qtimestamp_list3=q_timestamp_list!["nanos"; '*'; vec![KDB_TIMESTAMP_OFFSET + 639028212000001234_i64]];
+  assert_to_truefalse!(qtimestamp_list, qtimestamp_list3, num_success, num_failure);
+
+  print!("<<{:^50}>>", "timestamp from DateTime<Utc>");
+
+  let qtimestamp_list4=q_timestamp_list!["datetime"; '*'; vec![Utc.ymd(2020, 4, 1).and_hms_nano(3, 50, 12, 1234)]];
+  assert_to_truefalse!(qtimestamp_list, qtimestamp_list4, num_success, num_failure);
+
+  // Month //------------------------------------------/
+  print!("<<{:^50}>>", "month from ym");
+
+  // Base
+  let qmonth_list=QGEN::new_month_list_ym(Attribute::None, vec![(2019, 8), (2019, 9)]);
+
+  // Day should be supressed
+  let qmonth_list2=q_month_list!["ym"; '*'; vec![(2019, 8), (2019, 9)]];
+  assert_to_truefalse!(qmonth_list, qmonth_list2, num_success, num_failure);
+
+  print!("<<{:^50}>>", "month from Date<Utc>");
+
+  // Day should be supressed
+  let qmonth_list3=q_month_list!["date"; '*'; vec![Utc.ymd(2019, 8, 15), Utc.ymd(2019, 9, 21)]];
+  assert_to_truefalse!(qmonth_list, qmonth_list3, num_success, num_failure);
+
+  // Date //------------------------------------------/
+  print!("<<{:^50}>>", "date from ymd");
+
+  // Base
+  let qdate_list=QGEN::new_date_list_ymd(Attribute::None, vec![(2005, 5, 8)]);
+
+  let qdate_list2=q_date_list!["ymd"; '*'; vec![(2005, 5, 8)]];
+  assert_to_truefalse!(qdate_list, qdate_list2, num_success, num_failure);
+
+  print!("<<{:^50}>>", "date from Date<Utc>");
+
+  let qdate_list3=q_date_list!["date"; '*'; vec![Utc.ymd(2005, 5, 8)]];
+  assert_to_truefalse!(qdate_list, qdate_list3, num_success, num_failure);
+
+  // Datetime //--------------------------------------/
+  print!("<<{:^50}>>", "datetime from ymd_hms_millis");
+
+  // Base
+  let qdatetime_list=QGEN::new_datetime_list_ymd_hms_millis(Attribute::None, vec![(2005, 7, 23, 2, 23, 37, 172), (2008, 2, 1, 2, 31, 25, 828)]);
+
+  let qdatetime_list2=q_datetime_list!["ymd_hms_millis"; '*'; vec![(2005, 7, 23, 2, 23, 37, 172), (2008, 2, 1, 2, 31, 25, 828)]];
+  assert_to_truefalse!(qdatetime_list, qdatetime_list2, num_success, num_failure);
+
+  print!("<<{:^50}>>", "datetime from millisecond");
+
+  let qdatetime_list3=q_datetime_list!["millis"; '*'; vec![(KDB_DAY_OFFSET * ONE_DAY_MILLIS) + 175400617172_i64, (KDB_DAY_OFFSET * ONE_DAY_MILLIS) + 255148285828_i64]];
+  assert_to_truefalse!(qdatetime_list, qdatetime_list3, num_success, num_failure);
+
+  print!("<<{:^50}>>", "datetime from DateTime<Utc>");
+
+  let qdatetime_list4=q_datetime_list!["datetime"; '*'; vec![Utc.ymd(2005, 7, 23).and_hms_milli(2, 23, 37, 172), Utc.ymd(2008, 2, 1).and_hms_milli(2, 31, 25, 828)]];
+  assert_to_truefalse!(qdatetime_list, qdatetime_list4, num_success, num_failure);
+
+  // Timespan //--------------------------------------/
+  print!("<<{:^50}>>", "timespan from millisecond");
+
+  // Base
+  let qtimespan_list=QGEN::new_timespan_list_millis(Attribute::None, vec![172800000_i64, 215608000]);
+  let qtimespan_list2=q_timespan_list!["millis"; '*'; vec![172800000_i64, 215608000]];
+  assert_to_truefalse!(qtimespan_list, qtimespan_list2, num_success, num_failure);
+
+  print!("<<{:^50}>>", "timespan from nanosecond");
+
+  let qtimespan_list3=q_timespan_list!["nanos"; '*'; vec![172800000000000_i64, 215608000000000]];
+  assert_to_truefalse!(qtimespan_list, qtimespan_list3, num_success, num_failure);
+
+  print!("<<{:^50}>>", "timespan from Duration");
+
+  let qtimespan_list4=q_timespan_list!["duration"; '*'; vec![Duration::nanoseconds(172800000000000_i64), Duration::nanoseconds(215608000000000)]];
+  assert_to_truefalse!(qtimespan_list, qtimespan_list4, num_success, num_failure);
+
+  // Minute //----------------------------------------/
+  print!("<<{:^50}>>", "minute from hm");
+
+  // Base
+  let qminute_list=QGEN::new_minute_list_hm(Attribute::None, vec![(13, 4)]);
+  let qminute_list2=q_minute_list!["hm"; '*'; vec![(13, 4)]];
+  assert_to_truefalse!(qminute_list, qminute_list2, num_success, num_failure);
+
+  print!("<<{:^50}>>", "minute from min");
+
+  // 24:00 is supressed as 00:00
+  let qminute_list3=q_minute_list!["min"; '*'; vec![2224]];
+  assert_to_truefalse!(qminute_list, qminute_list3, num_success, num_failure);
+
+  print!("<<{:^50}>>", "minute from NaiveTime");
+
+  // Second is supressed
+  let qminute_list4=q_minute_list!["naivetime"; '*'; vec![NaiveTime::from_hms(13, 4, 30)]];
+  assert_to_truefalse!(qminute_list, qminute_list4, num_success, num_failure);
+
+  print!("<<{:^50}>>", "minute from QTime");
+
+  // Second is supressed
+  let qminute_list5=q_minute_list!["qtime"; '*'; vec![QTimeGEN::new_minute(NaiveTime::from_hms(13, 4, 50))]];
+  assert_to_truefalse!(qminute_list, qminute_list5, num_success, num_failure);
+
+  print!("<<{:^50}>>", "minute from null or infinity QTime");
+
+  let qminute_list6=QGEN::new_minute_list(Attribute::None, vec![Q_0Nu, Q_0Wu]);
+  let qminute_list7=q_minute_list!["min"; '*'; vec![Q_0Ni, Q_0Wi]];
+  assert_to_truefalse!(qminute_list6, qminute_list7, num_success, num_failure);
+  
+  // Second //----------------------------------------/
+  print!("<<{:^50}>>", "second from hms");
+
+  // Base
+  let qsecond_list=QGEN::new_second_list_hms(Attribute::None, vec![(8, 10, 2), (13, 5, 39)]);
+  // 48:00:00 is supressed to 00:00:00
+  let qsecond_list2=q_second_list!["hms"; '*'; vec![(8, 10, 2), (13, 5, 39)]];
+  assert_to_truefalse!(qsecond_list, qsecond_list2, num_success, num_failure);
+
+  print!("<<{:^50}>>", "second from sec");
+
+  // 48:00:00 is supressed to 00:00:00
+  let qsecond_list3=q_second_list!["sec"; '*'; vec![202202, 47139]];
+  assert_to_truefalse!(qsecond_list, qsecond_list3, num_success, num_failure);
+
+  print!("<<{:^50}>>", "second from NaiveTime");
+
+  // Millisecond is supressed
+  let qsecond_list4=q_second_list!["naivetime"; '*'; vec![NaiveTime::from_hms_milli(8, 10, 2, 325), NaiveTime::from_hms_milli(13, 5, 39, 127)]];
+  assert_to_truefalse!(qsecond_list, qsecond_list4, num_success, num_failure);
+
+  print!("<<{:^50}>>", "second from QTime");
+
+  // Millisecond is supressed
+  let qsecond_list5=q_second_list!["qtime"; '*'; vec![QTimeGEN::new_second(NaiveTime::from_hms_milli(8, 10, 2, 325)), QTimeGEN::new_second(NaiveTime::from_hms_milli(13, 5, 39, 127))]];
+  assert_to_truefalse!(qsecond_list, qsecond_list5, num_success, num_failure);
+
+  print!("<<{:^50}>>", "second from null or infinity QTime");
+
+  let q_second_list6=QGEN::new_second_list(Attribute::None, vec![Q_0Nv, Q_0Wv]);
+  let q_second_list7=q_second_list!["sec"; '*'; vec![Q_0Ni, Q_0Wi]]; 
+  assert_to_truefalse!(q_second_list6, q_second_list7, num_success, num_failure);
+
+  // Time //------------------------------------------/
+  print!("<<{:^50}>>", "time from hms_millis");
+
+  // Base
+  let qtime_list=QGEN::new_time_list_hms_millis(Attribute::None, vec![(20, 23, 25, 800), (1, 31, 20, 527)]);
+  // 24:00:00.000 is supressed to 00:00:00
+  let qtime_list2=q_time_list!["hms_millis"; '*'; vec![(20, 23, 25, 800), (1, 31, 20, 527)]];
+  assert_to_truefalse!(qtime_list, qtime_list2, num_success, num_failure);
+
+  print!("<<{:^50}>>", "time from millisecond");
+
+  // 24:00:00.000 is supressed to 00:00:00
+  let qtime_list3=q_time_list!["millis"; '*'; vec![159805800, 178280527]];
+  assert_to_truefalse!(qtime_list, qtime_list3, num_success, num_failure);
+
+  print!("<<{:^50}>>", "time from NaiveTime");
+
+  // Precision under millisecond is supressed
+  let qtime_list4=q_time_list!["naivetime"; '*'; vec![NaiveTime::from_hms_nano(20, 23, 25, 800123456), NaiveTime::from_hms_nano(1, 31, 20, 527123456)]];
+  assert_to_truefalse!(qtime_list, qtime_list4, num_success, num_failure);
+
+  print!("<<{:^50}>>", "time from QTime");
+
+  // Precision under millisecond is supressed
+  let qtime_list5=q_time_list!["qtime"; '*'; vec![QTimeGEN::new_time(NaiveTime::from_hms_nano(20, 23, 25, 800123456)), QTimeGEN::new_time(NaiveTime::from_hms_nano(1, 31, 20, 527123456))]];
+  assert_to_truefalse!(qtime_list, qtime_list5, num_success, num_failure);
+
+  print!("<<{:^50}>>", "time from null or infinity QTime");
+
+  let qtime_list6=QGEN::new_time_list(Attribute::None, vec![Q_0Nt, Q_0Wt]);
+  let qtime_list7=q_time_list!["millis"; '*'; vec![Q_0Ni, Q_0Wi]];
+  assert_to_truefalse!(qtime_list6, qtime_list7, num_success, num_failure);
+
+  Ok((num_success, num_failure))
+}
+
+/*
+* Test table macro
+*/
+fn table_macro_test() -> io::Result<(u32, u32)>{
+  println!("\n+{:-^70}+\n", "|| Table Macro ||");
+
+  let mut num_success: u32=0;
+  let mut num_failure: u32=0;
+
+  // Table //-----------------------------------------/
+  print!("<<{:^50}>>", "table");
+
+  let qtable=QGEN::new_table(
+    vec!["time", "sym", "price", "size", "ex"],
+    vec![
+      QGEN::new_timestamp_list(Attribute::None, vec![Utc.ymd(2020, 6, 1).and_hms_nano(7, 2, 13, 238912781), Utc.ymd(2020, 6, 1).and_hms_nano(7, 2, 14, 230892785), Utc.ymd(2020, 6, 1).and_hms_nano(7, 3, 1, 137860387)]),
+      QGEN::new_symbol_list(Attribute::Grouped, vec!["Kx", "FD", "Kx"]),
+      QGEN::new_float_list(Attribute::None, vec![103.68_f64, 107.42, 103.3]),
+      QGEN::new_long_list(Attribute::None, vec![1000_i64, 2000, 3000]),
+      QGEN::new_char_list(Attribute::None, "NLN")
+    ]
+  ).expect("Failed to build table");
+
+  let qtable2=q_table![
+    vec!["time", "sym", "price", "size", "ex"];
+    vec![
+      q_timestamp_list!["datetime"; '*'; vec![Utc.ymd(2020, 6, 1).and_hms_nano(7, 2, 13, 238912781), Utc.ymd(2020, 6, 1).and_hms_nano(7, 2, 14, 230892785), Utc.ymd(2020, 6, 1).and_hms_nano(7, 3, 1, 137860387)]],
+      q_symbol_list!['g'; vec!["Kx", "FD", "Kx"]],
+      q_float_list!['*'; vec![103.68_f64, 107.42, 103.3]],
+      q_long_list!['*'; vec![1000_i64, 2000, 3000]],
+      q_string!['*'; "NLN"]
+    ]
+  ].expect("Failed to build table");
+
+  assert_to_truefalse!(qtable, qtable2, num_success, num_failure);
+
+  Ok((num_success, num_failure))
+}
+
+/*
+* Test dictionary macro.
+* Note: As macros for atoms and lists have been tested above, only the structural
+*  conversion from vectors to dictionary is the focus.
+*/
+fn dictionary_macro_test() -> io::Result<(u32, u32)>{
+  println!("\n+{:-^70}+\n", "|| Dictionary Macro ||");
+
+  let mut num_success: u32=0;
+  let mut num_failure: u32=0;
+
+  // Dictionary //------------------------------------/
+  print!("<<{:^50}>>", "dictionary");
+
+  let qdict=QGEN::new_dictionary(QGEN::new_int_list(Attribute::Sorted, vec![100, 200, 300]), QGEN::new_mixed_list(vec![QGEN::new_char_list(Attribute::None, "super.firstderivatives.com"), QGEN::new_float(4.0), QGEN::new_month_list_ym(Attribute::None, vec![(2010, 3), (2011, 3)])]));
+  let qdict2=q_dictionary![
+    q_int_list!['s'; vec![100, 200, 300]];
+    q_mixed_list![q_string!['*'; "super.firstderivatives.com"], q_float![4.0], q_month_list!["ym"; '*'; vec![(2010, 3), (2011, 3)]]]
+  ];
+  assert_to_truefalse!(qdict, qdict2, num_success, num_failure);
+
+  Ok((num_success, num_failure))
+}
+
+/*
+* Test keyed table macro.
+*/
+fn keyed_table_macro_test() -> io::Result<(u32, u32)>{
+  println!("\n+{:-^70}+\n", "|| Keyed Table Macro ||");
+
+  let mut num_success: u32=0;
+  let mut num_failure: u32=0;
+
+  let qkeyed_table=QGEN::new_keyed_table(
+    vec!["city"],
+    vec![
+      QGEN::new_symbol_list(Attribute::None, vec!["Tokyo", "London", "NewYork"])
+    ],
+    vec!["area_skm", "population"],
+    vec![
+      QGEN::new_int_list(Attribute::None, vec![13500, 17300, 1740]),
+      QGEN::new_long_list(Attribute::None, vec![37400000_i64, 9046000, 18819000])
+    ]
+  ).unwrap();
+
+  let qkeyed_table2=q_keyed_table![
+    vec!["city"];
+    vec![
+      q_symbol_list!['*'; vec!["Tokyo", "London", "NewYork"]]
+    ];
+    vec!["area_skm", "population"];
+    vec![
+      q_int_list!['*'; vec![13500, 17300, 1740]],
+      q_long_list!['*'; vec![37400000_i64, 9046000, 18819000]]
+    ]
+  ]?;
+
+  assert_to_truefalse!(qkeyed_table, qkeyed_table2, num_success, num_failure);
 
   Ok((num_success, num_failure))
 }
@@ -2181,7 +2839,7 @@ fn atom_conversion_test() -> io::Result<(u32, u32)>{
 
   print!("<<{:^50}>>", "0w from Datetime");
 
-  let q_datetime=QGEN::new_datetime(Q_0Wz);
+  let q_datetime=QGEN::new_datetime(*Q_0Wz);
   let rust_f64=q_datetime.into_f64()?;
   assert_to_truefalse_custom!(||{assert!(rust_f64.is_infinite())}, num_success, num_failure);
 
@@ -2462,7 +3120,7 @@ fn list_conversion_test() -> io::Result<(u32, u32)>{
 
   print!("<<{:^50}>>", "0n or 0w from Datetime");
 
-  let q_datetime_list=QGEN::new_datetime_list(Attribute::None, vec![Q_0Nz, Q_0Wz]);
+  let q_datetime_list=QGEN::new_datetime_list(Attribute::None, vec![Q_0Nz, *Q_0Wz]);
   let (_, rust_f64_vec) = q_datetime_list.into_f64_vec()?;
   assert_to_truefalse_custom!(||{
     assert!(rust_f64_vec[0].is_nan());
