@@ -3,9 +3,10 @@
 //! This module provides methods to connect and send a query to kdb+ process.
 //!
 //! ## Connection
-//! The supported connection methods are follows:
+//! Following ways are supported to connect to kdb+:
 //! - TCP
 //! - TLS
+//! - Unix Domain Socket
 //! 
 //! Compression and decompression of IPC message follows [the manner of kdb+](https://code.kx.com/q/basics/ipc/#compression).
 //! 
@@ -13,6 +14,9 @@
 //! There are two kinds of query functions, sending a text query and sending a
 //!  functional query which is expressed in general list of q language, each of
 //!  which can be sent synchronously or asynchronously.
+//! 
+//! While TCP connection and TLS connection can be dealt in the same manner to send queries,
+//!  sending queries with Unix Domain Socket is handled separately (`send_*_query_*_uds`).
 
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 //                     Load Library                      //
@@ -25,13 +29,18 @@ use super::serialization;
 use super::deserialization;
 use std::error::Error as stdError;
 use std::io;
-use std::net::SocketAddr;
+use std::io::prelude::*;
+use std::path::Path;
+use std::env;
+use std::fs;
+use std::net::{SocketAddr, Shutdown};
 use native_tls::TlsConnector;
 use tokio::net::TcpStream;
 use tokio::io::{AsyncReadExt, AsyncWriteExt, AsyncBufRead, BufReader, BufWriter};
 use tokio::time;
 use tokio_native_tls::TlsStream;
 use trust_dns_resolver::AsyncResolver;
+use unix_socket::UnixStream;
 use chrono::Utc;
 
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
@@ -210,6 +219,26 @@ impl MsgHeader{
   }
 }
 
+//%% UnixStreamH %%//vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv/
+
+/// Handle to unix domain socket. Socket file is automatically created and removed.
+pub struct UnixStreamH{
+  handle: UnixStream,
+  sockfile: String
+}
+
+impl Drop for UnixStreamH{
+  fn drop(&mut self){
+    // Remove soket file if it exists
+    if Path::new(&self.sockfile).exists(){
+      match fs::remove_file(&self.sockfile){
+        Ok(_) => (),
+        Err(err) => eprintln!("{}", err)
+      }
+    }
+  }
+}
+
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 //                     Define Functions                  //
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
@@ -378,6 +407,64 @@ pub async fn connect_tls(host: &str, port: i32, credential: &str, timeout_millis
   Ok(handle)
 }
 
+/// Connect to q process running on specified `port` with Unix Domain Socket using a credential `username:password`.
+///  Returned handle is used to send/receive a message to and from the connected q process.
+/// # Parameters
+/// - `port`: Port number of target q process
+/// - `credential`: Credential used to connect to the target q process expressed in `username:password`
+/// - `timeout_millis`: Try to connect for this period (millisecond). If this value is set `0`, timeout is disabled
+///  and response is returned immediately.
+/// # Example
+/// ```
+/// use rustkdb::connection::*;
+/// 
+/// // Timeout is set 1 second (1000 millisecond)
+/// let mut handle=connect_uds(5000, "kdbuser:pass", 1000).await.expect("Failed to connect");
+/// ```
+pub async fn connect_uds(port: i32, credential: &str, timeout_millis: u64) -> io::Result<UnixStreamH>{
+
+  // Create file path
+  let udspath=match env::var("QUDSPATH"){
+    Ok(dir) => format!("{}/kx.{}", dir, port),
+    Err(_) => format!("/tmp/kx.{}", port)
+  };
+  let udspath=udspath;
+  let sockfile=Path::new(&udspath);
+
+  // Create the file if necessary
+  if !sockfile.exists() {
+    println!("Create {}", sockfile.display());
+    fs::OpenOptions::new().read(true).write(true).create_new(true).open(&sockfile)?;
+  }
+
+  // Bind to the file
+  let abs_sockfile=format!("\x00{}", udspath);
+  let abs_sockfile=Path::new(&abs_sockfile);
+  let mut handle = if timeout_millis > 0{
+    UnixStream::connect_timeout(&abs_sockfile, std::time::Duration::from_millis(timeout_millis))?
+  }else{
+    UnixStream::connect(&abs_sockfile)?
+  };
+
+  // Send credential
+  let credential=credential.to_string()+"\x06\x00";
+  if let Err(err)=handle.write_all(credential.as_bytes()){
+    return Err(io::Error::new(tokio::io::ErrorKind::BrokenPipe, format!("Failed to send handshake: {}", err)));
+  }
+  if let Err(err)=handle.flush(){
+    return Err(io::Error::new(tokio::io::ErrorKind::BrokenPipe, format!("Failed to flush a sender handle: {}", err)));
+  }
+
+  // Placeholder of common capablility
+  let mut cap= [0u8;1];
+  if let Err(_)=handle.read_exact(&mut cap){
+    // Connection is closed in case of authentication failure
+    return Err(io::Error::new(tokio::io::ErrorKind::ConnectionAborted, "Authentication failure."));
+  }
+
+  Ok(UnixStreamH{handle: handle, sockfile: udspath})
+}
+
 /// Close a handle to a q process.
 /// # Example
 /// ```
@@ -408,6 +495,29 @@ pub async fn close_tls(handle: &mut TlsStream<TcpStream>) -> io::Result<()>{
   handle.shutdown().await
 }
 
+/// Close a handle to a q process which is connected with Unix Domain Socket.
+///  Socket file is removed.
+/// # Example
+/// ```
+/// use rustkdb::connection::*;
+/// 
+/// // Open connection to a q process
+/// let mut handle=connect_uds(5000, "kdbuser:pass", 0).await.expect("Failed to connect");
+/// 
+/// // Close the handle
+/// close_uds(&mut handle).await?;
+/// ```
+pub async fn close_uds(handle: &mut UnixStreamH) -> io::Result<()>{
+  handle.handle.shutdown(Shutdown::Both)?;
+  if Path::new(&handle.sockfile).exists(){
+    match fs::remove_file(&handle.sockfile){
+      Ok(_) => (),
+      Err(err) => eprintln!("{}", err)
+    }
+  }
+  Ok(())
+}
+
 //%% Send Data %%//vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv/
 
 /*
@@ -434,6 +544,40 @@ where T: AsyncReadExt + AsyncBufRead + Unpin{
   let body_length=msg_header.get_length() as usize-MsgHeader::size();
   let mut buf=vec![0u8; body_length];
   if let Err(err)=reader.read_exact(&mut buf).await{
+    // Fails if q process fails before reading the body
+    return Err(io::Error::new(tokio::io::ErrorKind::UnexpectedEof, format!("Failed to read body of message: {}", err)));
+  }
+
+  match msg_header.get_compressed(){
+    0x01 => Ok((msg_header, compression::decompress(buf.as_slice(), msg_header.get_encode()).await)),
+    _ => Ok((msg_header, buf)) 
+  }
+
+}
+
+/*
+* @brief
+* Receive response from q process with decompression if necessary with Unix Domain Socket (`AsyncRead` is not supported).
+* @param
+* reader: Buffer reader with `UnixStream` an underlying handle
+* @param
+* buf: buffer to read header. This will be shadowed to read body.
+*/ 
+async fn recieve_response_uds(reader: &mut std::io::BufReader<&mut UnixStream>, buf: &mut Vec<u8>) -> io::Result<(MsgHeader, Vec<u8>)>{
+
+  // Read header
+  if let Err(err)=reader.read_exact(buf){
+    // The expected message is header or EOF (close due to q process failureresulting from bad query)
+    return Err(io::Error::new(tokio::io::ErrorKind::ConnectionAborted, format!("Connection dropped: {}", err)));
+  }
+
+  // Parse message header (should not fail)
+  let msg_header=MsgHeader::from_bytes(buf).await?;
+
+  // Read body
+  let body_length=msg_header.get_length() as usize-MsgHeader::size();
+  let mut buf=vec![0u8; body_length];
+  if let Err(err)=reader.read_exact(&mut buf){
     // Fails if q process fails before reading the body
     return Err(io::Error::new(tokio::io::ErrorKind::UnexpectedEof, format!("Failed to read body of message: {}", err)));
   }
@@ -478,9 +622,7 @@ async fn inspect_response(reader: &mut BufReader<&[u8]>, header: MsgHeader) -> i
 
 /*
 * @brief
-* Send string query to q process.
-* @param
-* handle: Handle to q process. `TcpStream` or `TlsStream<TcpStream>` is expected.
+* Prepare string query with header to send to q process.
 * @param
 * msg_type: Enum value indicating synchronous query or asynchronous query
 * @param
@@ -488,10 +630,7 @@ async fn inspect_response(reader: &mut BufReader<&[u8]>, header: MsgHeader) -> i
 * @param
 * encode: Enum value denoting Big edian or Little Endian
 */ 
-async fn send_string_query_inner<T>(handle: &mut T, msg_type: MessageType, msg: &str, encode: Encode) -> io::Result<()>
-  where T: AsyncWriteExt + Unpin{
-  
-  let mut writer=BufWriter::new(handle);
+async fn send_string_query_prepare_data(msg_type: MessageType, msg: &str, encode: Encode) -> Vec<u8>{
 
   //  Build header //--------------------------------/
   // Message header + (vector type + vector header) + data size
@@ -518,16 +657,8 @@ async fn send_string_query_inner<T>(handle: &mut T, msg_type: MessageType, msg: 
   message.extend(&length_info);
   // message
   message.extend(msg.as_bytes());
-  // Send data
-  if let Err(err)=writer.write_all(&message).await{
-    return Err(io::Error::new(tokio::io::ErrorKind::BrokenPipe, format!("Failed to send a text query: {}", err)));
-  }
-  // Flush
-  if let Err(err) = writer.flush().await{
-    return Err(io::Error::new(tokio::io::ErrorKind::BrokenPipe, format!("Failed to flush a sender handle: {}", err)));
-  }
-
-  Ok(())
+ 
+  message
 }
 
 /*
@@ -544,10 +675,21 @@ async fn send_string_query<T>(handle: &mut T, msg: &str, encode: Encode) -> io::
   where T: AsyncReadExt + AsyncWriteExt + Unpin{
   
   // Send string query synchronously
-  send_string_query_inner(handle, MessageType::Sync, msg, encode).await?;
+  let message=send_string_query_prepare_data(MessageType::Sync, msg, encode).await;
+
+  let mut writer = BufWriter::new(handle);
+  
+  // Send data
+  if let Err(_)=writer.write_all(&message).await{
+    return Err(io::Error::new(tokio::io::ErrorKind::BrokenPipe, "Failed to send a text query"));
+  }
+  // Flush
+  if let Err(_) = writer.flush().await{
+    return Err(io::Error::new(tokio::io::ErrorKind::BrokenPipe, "Failed to flush a sender handle."));
+  }
   
   // Receive data
-  let mut reader=BufReader::new(handle);
+  let mut reader=BufReader::new(writer.into_inner());
   let mut body: Vec<u8>=vec![0u8; MsgHeader::size()];
   let (msg_header, body) = recieve_response(&mut reader, &mut body).await?;
 
@@ -562,7 +704,7 @@ async fn send_string_query<T>(handle: &mut T, msg: &str, encode: Encode) -> io::
 /// Send a string query to q process synchronously in Little Endian.
 /// # Parameters
 /// - `handle`: Handle to q connection. `TcpStream` or `TlsStream<TcpStream>`.
-/// - `msg`: String query.
+/// - `msg`: `String` query.
 /// - `encode`: Enum value denoting Big Endian or Little Endian.
 /// # Eaxmple
 /// ```
@@ -581,11 +723,78 @@ pub async fn send_string_query_le<T>(handle: &mut T, msg: &str) -> io::Result<qt
 /// Send a string query to q process synchronously in Big Endian.
 /// # Parameters
 /// - `handle`: Handle to q connection. `TcpStream` or `TlsStream<TcpStream>`.
-/// - `msg`: String query.
+/// - `msg`: `String` query.
 /// - `encode`: Enum value denoting Big Endian or Little Endian.
 pub async fn send_string_query_be<T>(handle: &mut T, msg: &str) -> io::Result<qtype::Q>
   where T: AsyncReadExt + AsyncWriteExt + Unpin{
   send_string_query(handle, msg, Encode::BigEndian).await
+}
+
+/*
+* @brief
+* Send a string query to q process synchronously with Unix Domain Socket.
+* @param
+* `handle`: Handle to q connection. `UnixStreamH`.
+* @param
+* `msg`: `String` query.
+* @param
+* `encode`: Enum value denoting Big Endian or Little Endian.
+*/
+async fn send_string_query_uds(handle: &mut UnixStreamH, msg: &str, encode: Encode) -> io::Result<qtype::Q>{
+  
+  // Send string query synchronously
+  let message=send_string_query_prepare_data(MessageType::Sync, msg, encode).await;
+
+  let mut writer = std::io::BufWriter::new(&mut handle.handle);
+  
+  // Send data
+  if let Err(_)=writer.write_all(&message){
+    return Err(io::Error::new(tokio::io::ErrorKind::BrokenPipe, "Failed to send a text query"));
+  }
+  // Flush
+  if let Err(_) = writer.flush(){
+    return Err(io::Error::new(tokio::io::ErrorKind::BrokenPipe, "Failed to flush a sender handle."));
+  }
+  
+  // Receive data
+  let mut reader=std::io::BufReader::new(writer.into_inner()?);
+  let mut body: Vec<u8>=vec![0u8; MsgHeader::size()];
+  let (msg_header, body) = recieve_response_uds(&mut reader, &mut body).await?;
+
+  // Prepare a new reader of response
+  let mut reader=BufReader::new(body.as_slice());
+
+  // Inspect response if it is a kdb+ error; otherwise return teh result
+  inspect_response(&mut reader, msg_header).await
+  
+}
+
+/// Send a string query to q process synchronously in Little Endian with Unix Domain Socket.
+/// # Parameters
+/// - `handle`: Handle to q connection. `UnixStreamH`.
+/// - `msg`: String query.
+/// - `encode`: Enum value denoting Big Endian or Little Endian.
+/// # Eaxmple
+/// ```
+/// use rustkdb::connection::*;
+/// 
+/// // Connect to q process
+/// let mut handle=connect_uds(5000, "kdbuser:pass", 1000).await.expect("Failed to connect");
+/// 
+/// // Get a value by a synchronous query
+/// let res_int=send_string_query_le_uds(&mut handle, "prd 1 -3 5i").await?;
+/// ```
+pub async fn send_string_query_le_uds(handle: &mut UnixStreamH, msg: &str) -> io::Result<qtype::Q>{
+  send_string_query_uds(handle, msg, Encode::LittleEndian).await
+}
+
+/// Send a string query to q process synchronously in Big Endian with Unix Domain Socket.
+/// # Parameters
+/// - `handle`: Handle to q connection. `UnixStreamH`.
+/// - `msg`: String query.
+/// - `encode`: Enum value denoting Big Endian or Little Endian.
+pub async fn send_string_query_be_uds(handle: &mut UnixStreamH, msg: &str) -> io::Result<qtype::Q>{
+  send_string_query_uds(handle, msg, Encode::BigEndian).await
 }
 
 /// Send a string query to q process asynchronously in Little Endian.
@@ -599,17 +808,33 @@ pub async fn send_string_query_be<T>(handle: &mut T, msg: &str) -> io::Result<qt
 /// 
 /// // Connect to q process over TLS
 /// let mut handle=connect_tls("locahost", 5000, "kdbuser:pass", 1000, 100).await.expect("Failed to connect");
+/// 
 /// // Set a value 'a' by an asynchronous query
-/// send_string_query_async(&mut handle, "a:1+2", Encode::LittleEndian).await?;
+/// send_string_query_async_le(&mut handle, "a:1+2").await?;
+/// 
 /// // Get a value associated with 'a' by a synchronous query.
 /// let res_short=send_string_query_le(&mut handle, "type a").await?;
+/// 
 /// // -7h
 /// println!("{}", res_short);
 /// ```
 pub async fn send_string_query_async_le<T>(handle: &mut T, msg: &str) -> io::Result<()>
   where T: AsyncWriteExt + Unpin{
   // Send string query asynchronously
-  send_string_query_inner(handle, MessageType::Async, msg, Encode::LittleEndian).await
+  let message=send_string_query_prepare_data(MessageType::Async, msg, Encode::LittleEndian).await;
+  
+  let mut writer = BufWriter::new(handle);
+  
+  // Send data
+  if let Err(_)=writer.write_all(&message).await{
+    return Err(io::Error::new(tokio::io::ErrorKind::BrokenPipe, "Failed to send a text query"));
+  }
+  // Flush
+  if let Err(_) = writer.flush().await{
+    return Err(io::Error::new(tokio::io::ErrorKind::BrokenPipe, "Failed to flush a sender handle."));
+  }
+
+  Ok(())
 }
 
 /// Send a string query to q process asynchronously in Big Endian.
@@ -620,14 +845,87 @@ pub async fn send_string_query_async_le<T>(handle: &mut T, msg: &str) -> io::Res
 pub async fn send_string_query_async_be<T>(handle: &mut T, msg: &str) -> io::Result<()>
   where T: AsyncWriteExt + Unpin{
   // Send string query asynchronously
-  send_string_query_inner(handle, MessageType::Async, msg, Encode::BigEndian).await
+  let message=send_string_query_prepare_data(MessageType::Async, msg, Encode::BigEndian).await;
+
+  let mut writer = BufWriter::new(handle);
+  
+  // Send data
+  if let Err(_)=writer.write_all(&message).await{
+    return Err(io::Error::new(tokio::io::ErrorKind::BrokenPipe, "Failed to send a text query"));
+  }
+  // Flush
+  if let Err(_) = writer.flush().await{
+    return Err(io::Error::new(tokio::io::ErrorKind::BrokenPipe, "Failed to flush a sender handle."));
+  }
+
+  Ok(())
+}
+
+/// Send a string query to q process asynchronously in Little Endian.
+/// # Parameters
+/// - `handle`: Handle to q connection. `TcpStream` or `TlsStream<TcpStream>`.
+/// - `msg`: String query.
+/// - `encode`: Enum value denoting Big Endian or Little Endian.
+/// # Eaxmple
+/// ```
+/// use rustkdb::connection::*;
+/// 
+/// // Connect to q process with Unix Domain Socket
+/// let mut handle=connect_uds(5000, "kdbuser:pass", 1000).await.expect("Failed to connect");
+/// 
+/// // Set a value 'a' by an asynchronous query
+/// send_string_query_async_le_uds(&mut handle, "a:1+2").await?;
+/// 
+/// // Get a value associated with 'a' by a synchronous query.
+/// let res_short=send_string_query_le_uds(&mut handle, "type a").await?;
+/// 
+/// // -7h
+/// println!("{}", res_short);
+/// ```
+pub async fn send_string_query_async_le_uds(handle: &mut UnixStreamH, msg: &str) -> io::Result<()>{
+  // Send string query asynchronously
+  let message=send_string_query_prepare_data(MessageType::Async, msg, Encode::LittleEndian).await;
+
+  let mut writer = std::io::BufWriter::new(&mut handle.handle);
+  
+  // Send data
+  if let Err(_)=writer.write_all(&message){
+    return Err(io::Error::new(tokio::io::ErrorKind::BrokenPipe, "Failed to send a text query"));
+  }
+  // Flush
+  if let Err(_) = writer.flush(){
+    return Err(io::Error::new(tokio::io::ErrorKind::BrokenPipe, "Failed to flush a sender handle."));
+  }
+
+  Ok(())
+}
+
+/// Send a string query to q process asynchronously in Big Endian with Unix Domain Socket.
+/// # Parameters
+/// - `handle`: Handle to q connection. `TcpStream` or `TlsStream<TcpStream>`.
+/// - `msg`: String query.
+/// - `encode`: Enum value denoting Big Endian or Little Endian.
+pub async fn send_string_query_async_be_uds(handle: &mut UnixStreamH, msg: &str) -> io::Result<()>{
+  // Send string query asynchronously
+  let message=send_string_query_prepare_data(MessageType::Async, msg, Encode::BigEndian).await;
+
+  let mut writer = std::io::BufWriter::new(&mut handle.handle);
+  
+  // Send data
+  if let Err(_)=writer.write_all(&message){
+    return Err(io::Error::new(tokio::io::ErrorKind::BrokenPipe, "Failed to send a text query"));
+  }
+  // Flush
+  if let Err(_) = writer.flush(){
+    return Err(io::Error::new(tokio::io::ErrorKind::BrokenPipe, "Failed to flush a sender handle."));
+  }
+
+  Ok(())
 }
 
 /*
 * @brief
-* Send a query to q process which is expressed in a mixed list.
-* @param
-* handle: Handle to q process. `TcpStream` or `TlsStream<TcpStream>` is expected.
+* Prepare a query to q process which is expressed in a mixed list.
 * @param
 * msg_type: Enum value indicating synchronous query or asynchronous query
 * @param
@@ -635,8 +933,7 @@ pub async fn send_string_query_async_be<T>(handle: &mut T, msg: &str) -> io::Res
 * @param
 * encode: Enum value denoting Big edian or Little Endian
 */ 
-async fn send_query_inner<T>(handle: &mut T, msg_type: MessageType, query: qtype::Q, encode: Encode) -> io::Result<()>
-  where T: AsyncWriteExt + Unpin{
+async fn send_query_prepare_data(msg_type: MessageType, query: qtype::Q, encode: Encode) -> io::Result<Vec<u8>>{
 
   //  Build body //---------------------------------/
 
@@ -675,19 +972,7 @@ async fn send_query_inner<T>(handle: &mut T, msg_type: MessageType, query: qtype
     message.extend(&data);
   }
 
-  // Prepare new buf writer
-  let mut writer=BufWriter::new(handle);
-
-  // Send data
-  if let Err(err)=writer.write_all(&message).await{
-    return Err(io::Error::new(tokio::io::ErrorKind::BrokenPipe, format!("Failed to send a query: {}", err)));
-  }
-  // Flush
-  if let Err(err) = writer.flush().await{
-    return Err(io::Error::new(tokio::io::ErrorKind::BrokenPipe, format!("Failed to flush a sender handle: {}", err)));
-  }
-
-  Ok(())
+  Ok(message)
 }
 
 /*
@@ -703,10 +988,22 @@ async fn send_query_inner<T>(handle: &mut T, msg_type: MessageType, query: qtype
 async fn send_query<T>(handle: &mut T, query: qtype::Q, encode: Encode) -> io::Result<qtype::Q>
   where T: AsyncReadExt + AsyncWriteExt + Unpin{
   // Send data
-  send_query_inner(handle, MessageType::Sync, query, encode).await?;
+  let message=send_query_prepare_data(MessageType::Sync, query, encode).await?;
+
+  // Prepare new buf writer
+  let mut writer=BufWriter::new(handle);
+
+  // Send data
+  if let Err(err)=writer.write_all(&message).await{
+    return Err(io::Error::new(tokio::io::ErrorKind::BrokenPipe, format!("Failed to send a query: {}", err)));
+  }
+  // Flush
+  if let Err(err) = writer.flush().await{
+    return Err(io::Error::new(tokio::io::ErrorKind::BrokenPipe, format!("Failed to flush a sender handle: {}", err)));
+  }
   
   // Receive data
-  let mut reader=BufReader::new(handle);
+  let mut reader=BufReader::new(writer.into_inner());
   let mut body: Vec<u8>=vec![0u8; MsgHeader::size()]; 
   let (msg_header, body) = recieve_response(&mut reader, &mut body).await?;
 
@@ -722,20 +1019,23 @@ async fn send_query<T>(handle: &mut T, query: qtype::Q, encode: Encode) -> io::R
 /// - `handle`: Handle to q connection. `TcpStream` or `TlsStream<TcpStream>`.
 /// - `query`: Query expressed in `Q::MixedL`, i.e. functional query in q terminology.
 /// - `encode`: Enum value denoting Big Endian or Little Endian.
-/// # Note
-/// Consistent to the q limitation that the built-in functions cannot be called by symbol name,
-///  i.e. ```(`set; `some; 10000)``` fails. Instead `set` must be assigned to another variable
-///  and call it to `set`.
 /// # Eaxmple
 /// ```
+/// #[macro_use]
+/// extern crate rustkdb;
+/// 
+/// use rustkdb::qtype::*
 /// use rustkdb::connection::*;
 /// 
 /// // Connect to q process
 /// let mut handle=connect("localhost", 5000, "kdbuser:pass", 0, 0).await.expect("Failed to connect");
+/// 
 /// // Assign some function to 'init' by an asynchronous call.
 /// send_string_query_async_be(&mut handle, "init:{[] i:6; while[i-:1; -1 string[i], \"...\"; system \"sleep 1\"]; `Done.}").await?;
+/// 
 /// // Call 'init' without arguments. This is equivalent to (`init; ::) in q language.
-/// let response=send_query_le(&mut handle, QGEN::new_mixed_list(vec![QGEN::new_symbol("init"), QGEN::new_general_null()])).await?;
+/// let response=send_query_le(&mut handle, q_mixed_list![q_symbol!["init"], q_general_null!["::"]]).await?;
+/// 
 /// // `Done.
 /// println!("{}", response);
 /// ```
@@ -749,13 +1049,85 @@ pub async fn send_query_le<T>(handle: &mut T, query: qtype::Q) -> io::Result<qty
 /// - `handle`: Handle to q connection. `TcpStream` or `TlsStream<TcpStream>`.
 /// - `query`: Query expressed in `Q::MixedL`, i.e. functional query in q terminology.
 /// - `encode`: Enum value denoting Big Endian or Little Endian.
-/// # Note
-/// Consistent to the q limitation that the built-in functions cannot be called by symbol name,
-///  i.e. ```(`set; `some; 10000)``` fails. Instead `set` must be assigned to another variable
-///  and call it to `set`.
 pub async fn send_query_be<T>(handle: &mut T, query: qtype::Q) -> io::Result<qtype::Q>
   where T: AsyncReadExt + AsyncWriteExt + Unpin{
   send_query(handle, query, Encode::BigEndian).await
+}
+
+/*
+* @brief
+* Send a string query to q process synchronously with Unix Domain Socket.
+* @param
+* `handle`: Handle to q connection. `UnixStreamH`
+* @param
+* `query`: Query expressed in `Q::MixedL`, i.e. functional query in q terminology.
+* @param
+* `encode`: Enum value denoting Big Endian or Little Endian.
+*/
+async fn send_query_uds(handle: &mut UnixStreamH, query: qtype::Q, encode: Encode) -> io::Result<qtype::Q>{
+  // Send data
+  let message=send_query_prepare_data(MessageType::Sync, query, encode).await?;
+
+  // Prepare new buf writer
+  let mut writer=std::io::BufWriter::new(&mut handle.handle);
+
+  // Send data
+  if let Err(err)=writer.write_all(&message){
+    return Err(io::Error::new(tokio::io::ErrorKind::BrokenPipe, format!("Failed to send a query: {}", err)));
+  }
+  // Flush
+  if let Err(err) = writer.flush(){
+    return Err(io::Error::new(tokio::io::ErrorKind::BrokenPipe, format!("Failed to flush a sender handle: {}", err)));
+  }
+  
+  // Receive data
+  let mut reader=std::io::BufReader::new(writer.into_inner()?);
+  let mut body: Vec<u8>=vec![0u8; MsgHeader::size()]; 
+  let (msg_header, body) = recieve_response_uds(&mut reader, &mut body).await?;
+
+  // Prepare a new reader of response
+  let mut reader=BufReader::new(body.as_slice());
+
+  // Inspect response if it is a kdb+ error; otherwise return teh result
+  inspect_response(&mut reader, msg_header).await
+}
+
+/// Send a string query to q process synchronously in Little Endian with Unix Domain Socket.
+/// # Parameters
+/// - `handle`: Handle to q connection. `UnixStreamH`
+/// - `query`: Query expressed in `Q::MixedL`, i.e. functional query in q terminology.
+/// - `encode`: Enum value denoting Big Endian or Little Endian.
+/// # Eaxmple
+/// ```
+/// #[macro_use]
+/// extern crate rustkdb;
+/// 
+/// use rustkdb::qtype::*
+/// use rustkdb::connection::*;
+/// 
+/// // Connect to q process
+/// let mut handle=connect_uds(5000, "kdbuser:pass", 0).await.expect("Failed to connect");
+/// 
+/// // Assign some function to 'init' by an asynchronous call.
+/// send_string_query_async_be_uds(&mut handle, "init:{[] i:6; while[i-:1; -1 string[i], \"...\"; system \"sleep 1\"]; `Done.}").await?;
+/// 
+/// // Call 'init' without arguments. This is equivalent to (`init; ::) in q language.
+/// let response=send_query_le_uds(&mut handle, q_list![q_symbol!["init"], q_general_null!["::"]]).await?;
+/// 
+/// // `Done.
+/// println!("{}", response);
+/// ```
+pub async fn send_query_le_uds(handle: &mut UnixStreamH, query: qtype::Q) -> io::Result<qtype::Q>{
+  send_query_uds(handle, query, Encode::LittleEndian).await
+}
+
+/// Send a string query to q process synchronously in Big Endian with Unix Domain Socket.
+/// # Parameters
+/// - `handle`: Handle to q connection. `UnixStreamH`.
+/// - `query`: Query expressed in `Q::MixedL`, i.e. functional query in q terminology.
+/// - `encode`: Enum value denoting Big Endian or Little Endian.
+pub async fn send_query_be_uds(handle: &mut UnixStreamH, query: qtype::Q) -> io::Result<qtype::Q>{
+  send_query_uds(handle, query, Encode::BigEndian).await
 }
 
 /// Send a string query to q process asynchronously in Little Endian.
@@ -763,24 +1135,39 @@ pub async fn send_query_be<T>(handle: &mut T, query: qtype::Q) -> io::Result<qty
 /// - `handle`: Handle to q connection. `TcpStream` or `TlsStream<TcpStream>`.
 /// - `query`: Query expressed in `Q::MixedL`, i.e. functional query in q terminology.
 /// - `encode`: Enum value denoting Big Endian or Little Endian.
-/// # Note
-/// Consistent to the q limitation that the built-in functions cannot be called by symbol name,
-///  i.e. ``` (`set; `some; 10000) ``` fails. Instead `set` must be assigned to another variable
-///  and call it to `set`.
 /// # Eaxmple
 /// ```
+/// #[macro_use]
+/// extern crate rustkdb;
+/// 
+/// use rustkdb::qtype::*
 /// use rustkdb::connection::*;
 /// 
 /// // Connect to q process over TLS
-/// let mut handle=connect_tls("locahost", 5000, "kdbuser:pass", 1000, 200).await.expect("Failed to connect");
-/// // Assign built-in 'set' function to 'set_r'
-/// send_string_query_async_le(&mut handle, "set_r:set").await?;
-/// // Call 'set_r' with arguments `a and 42. This is equivalent to (`set_r; `a; 42) in q language.
-/// send_query_async_le(&mut handle, QGEN::new_mixed_list(vec![QGEN::new_symbol("set_r"), QGEN::new_symbol("a"), QGEN::new_long(42)])).await?;
+/// let mut handle=connect_tls("localhost", 5000, "kdbuser:pass", 1000, 200).await.expect("Failed to connect");
+///  
+/// // Call 'set' with arguments `a and 42. This is equivalent to ("set"; `a; 42) in q language.
+/// send_query_async_le(&mut handle, q_mixed_list![q_string!['*'; "set"], q_symbol!["a"], q_long![42_i64]]).await?;
 /// ```
 pub async fn send_query_async_le<T>(handle: &mut T, query: qtype::Q) -> io::Result<()>
   where T: AsyncWriteExt + Unpin{
-  send_query_inner(handle, MessageType::Async, query, Encode::LittleEndian).await
+
+  // Send data
+  let message=send_query_prepare_data(MessageType::Async, query, Encode::LittleEndian).await?;
+
+  // Prepare new buf writer
+  let mut writer=BufWriter::new(handle);
+
+  // Send data
+  if let Err(err)=writer.write_all(&message).await{
+    return Err(io::Error::new(tokio::io::ErrorKind::BrokenPipe, format!("Failed to send a query: {}", err)));
+  }
+  // Flush
+  if let Err(err) = writer.flush().await{
+    return Err(io::Error::new(tokio::io::ErrorKind::BrokenPipe, format!("Failed to flush a sender handle: {}", err)));
+  }
+
+  Ok(())
 }
 
 /// Send a string query to q process asynchronously in Big Endian.
@@ -788,11 +1175,87 @@ pub async fn send_query_async_le<T>(handle: &mut T, query: qtype::Q) -> io::Resu
 /// - `handle`: Handle to q connection. `TcpStream` or `TlsStream<TcpStream>`.
 /// - `query`: Query expressed in `Q::MixedL`, i.e. functional query in q terminology.
 /// - `encode`: Enum value denoting Big Endian or Little Endian.
-/// # Note
-/// Consistent to the q limitation that the built-in functions cannot be called by symbol name,
-///  i.e. ``` (`set; `some; 10000) ``` fails. Instead `set` must be assigned to another variable
-///  and call it to `set`.
 pub async fn send_query_async_be<T>(handle: &mut T, query: qtype::Q) -> io::Result<()>
   where T: AsyncWriteExt + Unpin{
-  send_query_inner(handle, MessageType::Async, query, Encode::BigEndian).await
+
+  // Send data
+  let message=send_query_prepare_data(MessageType::Async, query, Encode::BigEndian).await?;
+
+  // Prepare new buf writer
+  let mut writer=BufWriter::new(handle);
+
+  // Send data
+  if let Err(err)=writer.write_all(&message).await{
+    return Err(io::Error::new(tokio::io::ErrorKind::BrokenPipe, format!("Failed to send a query: {}", err)));
+  }
+  // Flush
+  if let Err(err) = writer.flush().await{
+    return Err(io::Error::new(tokio::io::ErrorKind::BrokenPipe, format!("Failed to flush a sender handle: {}", err)));
+  }
+
+  Ok(())
+}
+
+/// Send a string query to q process asynchronously in Little Endian with Unix Domain Socket.
+/// # Parameters
+/// - `handle`: Handle to q connection. `UnixStreamH`.
+/// - `query`: Query expressed in `Q::MixedL`, i.e. functional query in q terminology.
+/// - `encode`: Enum value denoting Big Endian or Little Endian.
+/// # Eaxmple
+/// ```
+/// #[macro_use]
+/// extern crate rustkdb;
+/// 
+/// use rustkdb::qtype::*
+/// use rustkdb::connection::*;
+/// 
+/// // Connect to q process over TLS
+/// let mut handle=connect_uds(5000, "kdbuser:pass", 1000).await.expect("Failed to connect");
+///  
+/// // Call 'set' with arguments `a and 42. This is equivalent to ("set"; `a; 42) in q language.
+/// send_query_async_le_uds(&mut handle, q_mixed_list![q_string!['*'; "set"], q_symbol!["a"], q_long![42_i64]]).await?;
+/// ```
+pub async fn send_query_async_le_uds(handle: &mut UnixStreamH, query: qtype::Q) -> io::Result<()>{
+
+  // Send data
+  let message=send_query_prepare_data(MessageType::Async, query, Encode::LittleEndian).await?;
+
+  // Prepare new buf writer
+  let mut writer=std::io::BufWriter::new(&mut handle.handle);
+
+  // Send data
+  if let Err(err)=writer.write_all(&message){
+    return Err(io::Error::new(tokio::io::ErrorKind::BrokenPipe, format!("Failed to send a query: {}", err)));
+  }
+  // Flush
+  if let Err(err) = writer.flush(){
+    return Err(io::Error::new(tokio::io::ErrorKind::BrokenPipe, format!("Failed to flush a sender handle: {}", err)));
+  }
+
+  Ok(())
+}
+
+/// Send a string query to q process asynchronously in Big Endian with Unix Domain Socket.
+/// # Parameters
+/// - `handle`: Handle to q connection. `UnixStreamH`.
+/// - `query`: Query expressed in `Q::MixedL`, i.e. functional query in q terminology.
+/// - `encode`: Enum value denoting Big Endian or Little Endian.
+pub async fn send_query_async_be_uds(handle: &mut UnixStreamH, query: qtype::Q) -> io::Result<()>{
+
+  // Send data
+  let message=send_query_prepare_data(MessageType::Async, query, Encode::BigEndian).await?;
+
+  // Prepare new buf writer
+  let mut writer=std::io::BufWriter::new(&mut handle.handle);
+
+  // Send data
+  if let Err(err)=writer.write_all(&message){
+    return Err(io::Error::new(tokio::io::ErrorKind::BrokenPipe, format!("Failed to send a query: {}", err)));
+  }
+  // Flush
+  if let Err(err) = writer.flush(){
+    return Err(io::Error::new(tokio::io::ErrorKind::BrokenPipe, format!("Failed to flush a sender handle: {}", err)));
+  }
+
+  Ok(())
 }

@@ -24,7 +24,10 @@
 //! **rustkdb** is using [Tokio](https://tokio.rs/) crate to provide asynchronous execution.
 //! 
 //! ## Connection
-//! Connection to kdb+ is either of TCP or TLS.
+//! Following ways are supported to connect to kdb+:
+//! - TCP
+//! - TLS
+//! - Unix Domain Socket
 //! 
 //! ## Query
 //! Query to kdb+ is supported by two ways, sending a text query or a functional query which is represented by a
@@ -116,6 +119,7 @@
 //! use rustkdb::qtype::*
 //! use rustkdb::connection::*;
 //! 
+//! // Connect to q process over TLS
 //! // Set timeout 1 second (1000 millisecond) and retry to connect every 200 millisecond
 //! let mut handle=connect_tls("localhost", 5000, "kdbuser:pass", 1000, 200).await.expect("Failed to connect");
 //! 
@@ -151,6 +155,9 @@
 //! let payment=send_query_le(&mut handle, q_mixed_list![q_symbol!["post_order"], q_symbol_list!['*'; vec!["salmon", "eel", "gunkan", "tuna"]]]).await?;
 //! // Order total: 480j yen
 //! println!("Order total: {} yen", payment);
+//! 
+//! // Close the handle
+//! close_tls(&mut handle).await?;
 //! ```
 
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//

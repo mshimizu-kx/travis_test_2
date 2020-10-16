@@ -1,7 +1,7 @@
-// test.rs
+// test_uds.rs
 
 /*
-* Tests done here because async functionality is used in the interface.
+* Tests of Unix Domain Socket are done here because async functionality is used in the interface.
 */
 
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
@@ -26,7 +26,6 @@ use std::io;
 use std::panic;
 use chrono::prelude::*;
 use chrono::{Duration, Utc, NaiveTime};
-use tokio::net::TcpStream;
 
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 //                        Macros                         //
@@ -104,7 +103,7 @@ macro_rules! assert_to_truefalse_float_list {
 async fn main() -> Result<(), io::Error>{
 
   // Connect to q process
-  let mut handle=connect("localhost", 5000, "kdbuser:pass", 1000, 200).await.expect("Failed to connect");
+  let mut handle=connect_uds(5000, "kdbuser:pass", 1000).await.expect("Failed to connect");
 
   // Vector to store execution time of each test
   let mut execution_time=Vec::new();
@@ -275,7 +274,7 @@ async fn main() -> Result<(), io::Error>{
 * therefore testing with a few cases should be enough to verfy correctness.
 * - synchronous and asynchronous call of a text query function
 */
-async fn deserialize_atom_test(handle: &mut TcpStream) -> Result<(u32, u32), io::Error>{
+async fn deserialize_atom_test(handle: &mut UnixStreamH) -> Result<(u32, u32), io::Error>{
   println!("\n+{:-^70}+\n", "|| Deserialize Atom ||");
   
   let mut num_success: u32=0;
@@ -284,134 +283,134 @@ async fn deserialize_atom_test(handle: &mut TcpStream) -> Result<(u32, u32), io:
   // Boolean //-------------------------------------/
   print!("<<{:^58}>>", "bool - query sent in LE");
 
-  let res_bool=send_string_query_le(handle, "`boolean$-42").await?;
+  let res_bool=send_string_query_le_uds(handle, "`boolean$-42").await?;
   assert_to_truefalse!(res_bool, QGEN::new_bool(true), num_success, num_failure);
 
   print!("<<{:^58}>>", "async call 1");
 
-  let res_void=send_string_query_async_le(handle, "b:12+23").await?;
+  let res_void=send_string_query_async_le_uds(handle, "b:12+23").await?;
   assert_to_truefalse!(res_void, (), num_success, num_failure);
 
   print!("<<{:^58}>>", "bool - query sent in BE");
 
-  let res_bool=send_string_query_be(handle, "34 = b").await?;
+  let res_bool=send_string_query_be_uds(handle, "34 = b").await?;
   assert_to_truefalse!(res_bool, QGEN::new_bool(false), num_success, num_failure);
   
   // GUID //---------------------------------------/
   print!("<<{:^58}>>", "GUID - query sent in LE");
 
-  let res_guid=send_string_query_le(handle, "0x0 sv 0x8c6b8b64681560840a3e178401251b68").await?;
+  let res_guid=send_string_query_le_uds(handle, "0x0 sv 0x8c6b8b64681560840a3e178401251b68").await?;
   assert_to_truefalse!(res_guid, QGEN::new_GUID([0x8c, 0x6b, 0x8b, 0x64, 0x68, 0x15, 0x60, 0x84, 0x0a, 0x3e, 0x17, 0x84, 0x01, 0x25, 0x1b, 0x68]), num_success, num_failure);
   
   print!("<<{:^58}>>", "GUID - query sent in BE");
 
-  let res_guid=send_string_query_be(handle, "\"G\"$\"8c6b8b64-6815-6084-0a3e-178401251b68\"").await?;
+  let res_guid=send_string_query_be_uds(handle, "\"G\"$\"8c6b8b64-6815-6084-0a3e-178401251b68\"").await?;
   assert_to_truefalse!(res_guid, QGEN::new_GUID([0x8c, 0x6b, 0x8b, 0x64, 0x68, 0x15, 0x60, 0x84, 0x0a, 0x3e, 0x17, 0x84, 0x01, 0x25, 0x1b, 0x68]), num_success, num_failure);
 
   // Byte //---------------------------------------/
   print!("<<{:^58}>>", "byte - query sent in LE");
 
-  let res_byte=send_string_query_le(handle, "\"x\"$1+2").await?;
+  let res_byte=send_string_query_le_uds(handle, "\"x\"$1+2").await?;
   assert_to_truefalse!(res_byte, QGEN::new_byte(3_u8), num_success, num_failure);
 
   print!("<<{:^58}>>", "byte - query sent in BE");
 
-  let res_byte=send_string_query_be(handle, "`byte$12").await?;
+  let res_byte=send_string_query_be_uds(handle, "`byte$12").await?;
   assert_to_truefalse!(res_byte, QGEN::new_byte(12_u8), num_success, num_failure);
   
   // Short //--------------------------------------/
   print!("<<{:^58}>>", "async call 2");
 
-  let res_void=send_string_query_async_be(handle, "a:1+2").await?;
+  let res_void=send_string_query_async_be_uds(handle, "a:1+2").await?;
   assert_to_truefalse!(res_void, (), num_success, num_failure);
 
   print!("<<{:^58}>>", "short");
   
-  let res_short=send_string_query_be(handle, "`short$-12+a").await?;
+  let res_short=send_string_query_be_uds(handle, "`short$-12+a").await?;
   assert_to_truefalse!(res_short, QGEN::new_short(-9_i16), num_success, num_failure);
   
   // Int //----------------------------------------/
   print!("<<{:^58}>>", "int");
 
-  let res_int=send_string_query_le(handle, "prd 1 -3 5i").await?;
+  let res_int=send_string_query_le_uds(handle, "prd 1 -3 5i").await?;
   assert_to_truefalse!(res_int, QGEN::new_int(-15_i32), num_success, num_failure);
   
   // Long //---------------------------------------/
   print!("<<{:^58}>>", "long");
 
-  let res_long=send_string_query_le(handle, "3i+b").await?;
+  let res_long=send_string_query_le_uds(handle, "3i+b").await?;
   assert_to_truefalse!(res_long, QGEN::new_long(38_i64), num_success, num_failure);
   
   // Real //---------------------------------------/
   print!("<<{:^58}>>", "real");
   
-  let res_real=send_string_query_le(handle, "`real$1.5*1.2").await?;
+  let res_real=send_string_query_le_uds(handle, "`real$1.5*1.2").await?;
   assert_to_truefalse!(res_real, QGEN::new_real(1.8_f32), num_success, num_failure);
   
   // Float //--------------------------------------/
   print!("<<{:^58}>>", "float");
 
-  let res_float=send_string_query_le(handle, "dev 1 2 3 4f").await?;
+  let res_float=send_string_query_le_uds(handle, "dev 1 2 3 4f").await?;
   assert_to_truefalse_float!(res_float.into_f64().expect("Failed to convert into f64"), 1.118034_f64, 0.00001, num_success, num_failure);
   
   // Char //---------------------------------------/
   print!("<<{:^58}>>", "char");
 
-  let res_char=send_string_query_le(handle, ".Q.a[3]").await?;
+  let res_char=send_string_query_le_uds(handle, ".Q.a[3]").await?;
   assert_to_truefalse!(res_char, QGEN::new_char('d'), num_success, num_failure);
 
   // Symbol //-------------------------------------/
   print!("<<{:^58}>>", "symbol");
 
-  let res_symbol=send_string_query_le(handle, "`$\"Hiya\"").await?;
+  let res_symbol=send_string_query_le_uds(handle, "`$\"Hiya\"").await?;
   assert_to_truefalse!(res_symbol, QGEN::new_symbol("Hiya"), num_success, num_failure);
   
   // Timestamp //----------------------------------/
   print!("<<{:^58}>>", "timestamp");
 
-  let res_timestamp=send_string_query_le(handle, "2015.03.16D08:00:25.000007368").await?;
+  let res_timestamp=send_string_query_le_uds(handle, "2015.03.16D08:00:25.000007368").await?;
   assert_to_truefalse!(res_timestamp, QGEN::new_timestamp_ymd_hms_nanos(2015, 3, 16, 8, 0, 25, 7368), num_success, num_failure);
 
   // Month //--------------------------------------/
   print!("<<{:^58}>>", "month");
 
-  let res_month=send_string_query_le(handle, "2000.01m+70").await?;
+  let res_month=send_string_query_le_uds(handle, "2000.01m+70").await?;
   assert_to_truefalse!(res_month, QGEN::new_month_ym(2005, 11), num_success, num_failure);
   
   // Date //---------------------------------------/
   print!("<<{:^58}>>", "date");
 
-  let res_date=send_string_query_le(handle, "2000.01.01+7320").await?;
+  let res_date=send_string_query_le_uds(handle, "2000.01.01+7320").await?;
   assert_to_truefalse!(res_date, QGEN::new_date_ymd(2020, 1, 16), num_success, num_failure);
   
   // Datetime //-----------------------------------/
   print!("<<{:^58}>>", "datetime");
 
-  let res_datetime=send_string_query_le(handle, "`datetime$2020.09.05D15:12:39.569230892").await?;
+  let res_datetime=send_string_query_le_uds(handle, "`datetime$2020.09.05D15:12:39.569230892").await?;
   assert_to_truefalse!(res_datetime, QGEN::new_datetime_ymd_hms_millis(2020, 9, 5, 15, 12, 39, 569), num_success, num_failure);
   
   // Timespan //---------------------------------------/
   print!("<<{:^58}>>", "timespan");
 
-  let res_timespan=send_string_query_le(handle, "1D+1").await?;
+  let res_timespan=send_string_query_le_uds(handle, "1D+1").await?;
   assert_to_truefalse!(res_timespan, QGEN::new_timespan_nanos(86400000000001_i64), num_success, num_failure);
   
   // Minute //-----------------------------------------/
   print!("<<{:^58}>>", "minute");
 
-  let res_minute=send_string_query_le(handle, "14:29").await?;
+  let res_minute=send_string_query_le_uds(handle, "14:29").await?;
   assert_to_truefalse!(res_minute, QGEN::new_minute_hm(14, 29), num_success, num_failure);
   
   // Second //---------------------------------------/
   print!("<<{:^58}>>", "second");
 
-  let res_second=send_string_query_le(handle, "`second$8000").await?;
+  let res_second=send_string_query_le_uds(handle, "`second$8000").await?;
   assert_to_truefalse!(res_second, QGEN::new_second_hms(2, 13, 20), num_success, num_failure);
   
   // Time //---------------------------------------/
   print!("<<{:^58}>>", "time");
 
-  let res_time=send_string_query_le(handle, "`time$2020.02.18D12:30:45.678333825").await?;
+  let res_time=send_string_query_le_uds(handle, "`time$2020.02.18D12:30:45.678333825").await?;
   assert_to_truefalse!(res_time, QGEN::new_time_hms_millis(12, 30, 45, 678), num_success, num_failure);
   
   Ok((num_success, num_failure))
@@ -421,7 +420,7 @@ async fn deserialize_atom_test(handle: &mut TcpStream) -> Result<(u32, u32), io:
 * Test one aspect of interface:
 * - serialize atom q object in both Big Endian and Little Endian
 */
-async fn serialize_atom_test(handle:&mut  TcpStream) -> io::Result<(u32, u32)>{
+async fn serialize_atom_test(handle:&mut  UnixStreamH) -> io::Result<(u32, u32)>{
   println!("\n+{:-^70}+\n", "|| Serialize Atom ||");
 
   let mut num_success: u32=0;
@@ -430,177 +429,177 @@ async fn serialize_atom_test(handle:&mut  TcpStream) -> io::Result<(u32, u32)>{
   // Boolean //-------------------------------------/
   print!("<<{:^58}>>", "bool");
 
-  let res_bool=send_query_le(handle, QGEN::new_mixed_list(vec![QGEN::new_general_null(), QGEN::new_bool(true)])).await?;
+  let res_bool=send_query_le_uds(handle, QGEN::new_mixed_list(vec![QGEN::new_general_null(), QGEN::new_bool(true)])).await?;
   assert_to_truefalse!(res_bool, QGEN::new_bool(true), num_success, num_failure);
 
   // GUID //----------------------------------------/
   print!("<<{:^58}>>", "GUID");
 
-  let res_GUID=send_query_le(handle, QGEN::new_mixed_list(vec![QGEN::new_general_null(), QGEN::new_GUID([0x1e, 0x11, 0x17, 0x0c, 0x42, 0x24, 0x25, 0x2c, 0x1c, 0x14, 0x1e, 0x22, 0x4d, 0x3d, 0x46, 0x24])])).await?;
+  let res_GUID=send_query_le_uds(handle, QGEN::new_mixed_list(vec![QGEN::new_general_null(), QGEN::new_GUID([0x1e, 0x11, 0x17, 0x0c, 0x42, 0x24, 0x25, 0x2c, 0x1c, 0x14, 0x1e, 0x22, 0x4d, 0x3d, 0x46, 0x24])])).await?;
   assert_to_truefalse!(res_GUID, QGEN::new_GUID([0x1e, 0x11, 0x17, 0x0c, 0x42, 0x24, 0x25, 0x2c, 0x1c, 0x14, 0x1e, 0x22, 0x4d, 0x3d, 0x46, 0x24]), num_success, num_failure);
 
   // Byte //----------------------------------------/
   print!("<<{:^58}>>", "byte");
 
-  let res_byte=send_query_le(handle, QGEN::new_mixed_list(vec![QGEN::new_general_null(), QGEN::new_byte(0x3c)])).await?;
+  let res_byte=send_query_le_uds(handle, QGEN::new_mixed_list(vec![QGEN::new_general_null(), QGEN::new_byte(0x3c)])).await?;
   assert_to_truefalse!(res_byte, QGEN::new_byte(0x3c), num_success, num_failure);
 
   // Short //---------------------------------------/
   print!("<<{:^58}>>", "short - query sent in LE");
 
-  let res_short=send_query_le(handle, QGEN::new_mixed_list(vec![QGEN::new_general_null(), QGEN::new_short(17)])).await?;
+  let res_short=send_query_le_uds(handle, QGEN::new_mixed_list(vec![QGEN::new_general_null(), QGEN::new_short(17)])).await?;
   assert_to_truefalse!(res_short, QGEN::new_short(17_i16), num_success, num_failure);
 
   print!("<<{:^58}>>", "short - query sent in BE");
 
-  let res_short=send_query_be(handle, QGEN::new_mixed_list(vec![QGEN::new_general_null(), QGEN::new_short(17)])).await?;
+  let res_short=send_query_be_uds(handle, QGEN::new_mixed_list(vec![QGEN::new_general_null(), QGEN::new_short(17)])).await?;
   assert_to_truefalse!(res_short, QGEN::new_short(17_i16), num_success, num_failure);
 
   // Int //-----------------------------------------/
   print!("<<{:^58}>>", "int - query sent in LE");
 
-  let res_int=send_query_le(handle, QGEN::new_mixed_list(vec![QGEN::new_general_null(), QGEN::new_int(-34567789)])).await?;
+  let res_int=send_query_le_uds(handle, QGEN::new_mixed_list(vec![QGEN::new_general_null(), QGEN::new_int(-34567789)])).await?;
   assert_to_truefalse!(res_int, QGEN::new_int(-34567789), num_success, num_failure);
 
   print!("<<{:^58}>>", "int - query sent in BE");
 
-  let res_int=send_query_be(handle, QGEN::new_mixed_list(vec![QGEN::new_general_null(), QGEN::new_int(-34567789)])).await?;
+  let res_int=send_query_be_uds(handle, QGEN::new_mixed_list(vec![QGEN::new_general_null(), QGEN::new_int(-34567789)])).await?;
   assert_to_truefalse!(res_int, QGEN::new_int(-34567789), num_success, num_failure);
 
   // Long //----------------------------------------/
   print!("<<{:^58}>>", "long - query sent in LE");
 
-  let res_long=send_query_le(handle, QGEN::new_mixed_list(vec![QGEN::new_general_null(), QGEN::new_long(86400000000000_i64)])).await?;
+  let res_long=send_query_le_uds(handle, QGEN::new_mixed_list(vec![QGEN::new_general_null(), QGEN::new_long(86400000000000_i64)])).await?;
   assert_to_truefalse!(res_long, QGEN::new_long(86400000000000_i64), num_success, num_failure);
 
   print!("<<{:^58}>>", "long - query sent in BE");
 
-  let res_long=send_query_be(handle, QGEN::new_mixed_list(vec![QGEN::new_general_null(), QGEN::new_long(86400000000000_i64)])).await?;
+  let res_long=send_query_be_uds(handle, QGEN::new_mixed_list(vec![QGEN::new_general_null(), QGEN::new_long(86400000000000_i64)])).await?;
   assert_to_truefalse!(res_long, QGEN::new_long(86400000000000_i64), num_success, num_failure);
 
   // Real //----------------------------------------/
   print!("<<{:^58}>>", "real - query sent in LE");
 
-  let res_real=send_query_le(handle, QGEN::new_mixed_list(vec![QGEN::new_general_null(), QGEN::new_real(10.25)])).await?;
+  let res_real=send_query_le_uds(handle, QGEN::new_mixed_list(vec![QGEN::new_general_null(), QGEN::new_real(10.25)])).await?;
   assert_to_truefalse!(res_real, QGEN::new_real(10.25), num_success, num_failure);
 
   print!("<<{:^58}>>", "real - query sent in BE");
 
-  let res_real=send_query_be(handle, QGEN::new_mixed_list(vec![QGEN::new_general_null(), QGEN::new_real(10.25)])).await?;
+  let res_real=send_query_be_uds(handle, QGEN::new_mixed_list(vec![QGEN::new_general_null(), QGEN::new_real(10.25)])).await?;
   assert_to_truefalse!(res_real, QGEN::new_real(10.25), num_success, num_failure);
 
   // Float //----------------------------------------/
   print!("<<{:^58}>>", "float - query sent in LE");
 
-  let res_float=send_query_le(handle, QGEN::new_mixed_list(vec![QGEN::new_general_null(), QGEN::new_float(103.678_f64)])).await?;
+  let res_float=send_query_le_uds(handle, QGEN::new_mixed_list(vec![QGEN::new_general_null(), QGEN::new_float(103.678_f64)])).await?;
   assert_to_truefalse!(res_float, QGEN::new_float(103.678), num_success, num_failure);
   //assert_to_truefalse_float!(res_float.into_f64().expect("Failed to convert into f64"), 103.678_f64, 0.0001);
 
   // Float //----------------------------------------/
   print!("<<{:^58}>>", "float - query sent in BE");
 
-  let res_float=send_query_be(handle, QGEN::new_mixed_list(vec![QGEN::new_general_null(), QGEN::new_float(103.678)])).await?;
+  let res_float=send_query_be_uds(handle, QGEN::new_mixed_list(vec![QGEN::new_general_null(), QGEN::new_float(103.678)])).await?;
   assert_to_truefalse!(res_float, QGEN::new_float(103.678), num_success, num_failure);
   //assert_to_truefalse_float!(res_float.into_f64().expect("Failed to convert into f64"), 103.678_f64, 0.0001, num_success, num_failure);
 
   // Char //-----------------------------------------/
   print!("<<{:^58}>>", "char");
 
-  let res_char=send_query_be(handle, QGEN::new_mixed_list(vec![QGEN::new_general_null(), QGEN::new_char('q')])).await?;
+  let res_char=send_query_be_uds(handle, QGEN::new_mixed_list(vec![QGEN::new_general_null(), QGEN::new_char('q')])).await?;
   assert_to_truefalse!(res_char, QGEN::new_char('q'), num_success, num_failure);
 
   // Symbol //-----------------------------------------/
   print!("<<{:^58}>>", "symbol");
 
-  let res_symbol=send_query_le(handle, QGEN::new_mixed_list(vec![QGEN::new_general_null(), QGEN::new_symbol("kdb+")])).await?;
+  let res_symbol=send_query_le_uds(handle, QGEN::new_mixed_list(vec![QGEN::new_general_null(), QGEN::new_symbol("kdb+")])).await?;
   assert_to_truefalse!(res_symbol, QGEN::new_symbol("kdb+"), num_success, num_failure);
 
   // Timestamp //--------------------------------------/
   print!("<<{:^58}>>", "timestamp - query sent in LE");
 
-  let res_timestamp=send_query_le(handle, QGEN::new_mixed_list(vec![QGEN::new_general_null(), QGEN::new_timestamp_ymd_hms_nanos(2018, 2, 18, 4, 0, 0, 100)])).await?;
+  let res_timestamp=send_query_le_uds(handle, QGEN::new_mixed_list(vec![QGEN::new_general_null(), QGEN::new_timestamp_ymd_hms_nanos(2018, 2, 18, 4, 0, 0, 100)])).await?;
   assert_to_truefalse!(res_timestamp, QGEN::new_timestamp_ymd_hms_nanos(2018, 2, 18, 4, 0, 0, 100), num_success, num_failure);
 
   print!("<<{:^58}>>", "timestamp - query sent in BE");
 
-  let res_timestamp=send_query_be(handle, QGEN::new_mixed_list(vec![QGEN::new_general_null(), QGEN::new_timestamp_ymd_hms_nanos(2018, 2, 18, 4, 0, 0, 100)])).await?;
+  let res_timestamp=send_query_be_uds(handle, QGEN::new_mixed_list(vec![QGEN::new_general_null(), QGEN::new_timestamp_ymd_hms_nanos(2018, 2, 18, 4, 0, 0, 100)])).await?;
   assert_to_truefalse!(res_timestamp, QGEN::new_timestamp_ymd_hms_nanos(2018, 2, 18, 4, 0, 0, 100), num_success, num_failure);
 
   // Month //-----------------------------------------/
   print!("<<{:^58}>>", "month - query sent in LE");
   
-  let res_month=send_query_le(handle, QGEN::new_mixed_list(vec![QGEN::new_general_null(), QGEN::new_month_ym(2013, 9)])).await?;
+  let res_month=send_query_le_uds(handle, QGEN::new_mixed_list(vec![QGEN::new_general_null(), QGEN::new_month_ym(2013, 9)])).await?;
   assert_to_truefalse!(res_month, QGEN::new_month_ym(2013, 9), num_success, num_failure);
 
   print!("<<{:^58}>>", "month - query sent in BE");
   
-  let res_month=send_query_be(handle, QGEN::new_mixed_list(vec![QGEN::new_general_null(), QGEN::new_month_ym(2013, 9)])).await?;
+  let res_month=send_query_be_uds(handle, QGEN::new_mixed_list(vec![QGEN::new_general_null(), QGEN::new_month_ym(2013, 9)])).await?;
   assert_to_truefalse!(res_month, QGEN::new_month_ym(2013, 9), num_success, num_failure);
 
   // Date //-----------------------------------------/
   print!("<<{:^58}>>", "date - query sent in LE");
 
-  let res_date=send_query_le(handle, QGEN::new_mixed_list(vec![QGEN::new_general_null(), QGEN::new_date_ymd(2000, 2, 9)])).await?;
+  let res_date=send_query_le_uds(handle, QGEN::new_mixed_list(vec![QGEN::new_general_null(), QGEN::new_date_ymd(2000, 2, 9)])).await?;
   assert_to_truefalse!(res_date, QGEN::new_date_ymd(2000, 2, 9), num_success, num_failure);
 
   print!("<<{:^58}>>", "date - query sent in BE");
 
-  let res_date=send_query_be(handle, QGEN::new_mixed_list(vec![QGEN::new_general_null(), QGEN::new_date_ymd(2000, 2, 9)])).await?;
+  let res_date=send_query_be_uds(handle, QGEN::new_mixed_list(vec![QGEN::new_general_null(), QGEN::new_date_ymd(2000, 2, 9)])).await?;
   assert_to_truefalse!(res_date, QGEN::new_date_ymd(2000, 2, 9), num_success, num_failure);
 
   // Datetime //-------------------------------------/
   print!("<<{:^58}>>", "datetime - query sent in LE");
 
-  let res_datetime=send_query_le(handle, QGEN::new_mixed_list(vec![QGEN::new_general_null(), QGEN::new_datetime_ymd_hms_millis(2004, 6, 17, 11, 32, 40, 803)])).await?;
+  let res_datetime=send_query_le_uds(handle, QGEN::new_mixed_list(vec![QGEN::new_general_null(), QGEN::new_datetime_ymd_hms_millis(2004, 6, 17, 11, 32, 40, 803)])).await?;
   assert_to_truefalse!(res_datetime, QGEN::new_datetime_ymd_hms_millis(2004, 6, 17, 11, 32, 40, 803), num_success, num_failure);
 
   print!("<<{:^58}>>", "datetime - query sent in BE");
 
-  let res_datetime=send_query_be(handle, QGEN::new_mixed_list(vec![QGEN::new_general_null(), QGEN::new_datetime_ymd_hms_millis(2004, 6, 17, 11, 32, 40, 803)])).await?;
+  let res_datetime=send_query_be_uds(handle, QGEN::new_mixed_list(vec![QGEN::new_general_null(), QGEN::new_datetime_ymd_hms_millis(2004, 6, 17, 11, 32, 40, 803)])).await?;
   assert_to_truefalse!(res_datetime, QGEN::new_datetime_ymd_hms_millis(2004, 6, 17, 11, 32, 40, 803), num_success, num_failure);
 
   // Timespan //------------------------------------/
   print!("<<{:^58}>>", "timespan - query sent in LE");
 
-  let res_timespan=send_query_le(handle, QGEN::new_mixed_list(vec![QGEN::new_general_null(), QGEN::new_timespan_millis(999_i64)])).await?;
+  let res_timespan=send_query_le_uds(handle, QGEN::new_mixed_list(vec![QGEN::new_general_null(), QGEN::new_timespan_millis(999_i64)])).await?;
   assert_to_truefalse!(res_timespan, QGEN::new_timespan_millis(999_i64), num_success, num_failure);
 
   print!("<<{:^58}>>", "timespan - query sent in BE");
 
-  let res_timespan=send_query_be(handle, QGEN::new_mixed_list(vec![QGEN::new_general_null(), QGEN::new_timespan_millis(999_i64)])).await?;
+  let res_timespan=send_query_be_uds(handle, QGEN::new_mixed_list(vec![QGEN::new_general_null(), QGEN::new_timespan_millis(999_i64)])).await?;
   assert_to_truefalse!(res_timespan, QGEN::new_timespan_millis(999_i64), num_success, num_failure);
 
   // Minute //-------------------------------------/
   print!("<<{:^58}>>", "minute - query sent in LE");
 
-  let res_minute=send_query_le(handle, QGEN::new_mixed_list(vec![QGEN::new_general_null(), QGEN::new_minute_min(1231)])).await?;
+  let res_minute=send_query_le_uds(handle, QGEN::new_mixed_list(vec![QGEN::new_general_null(), QGEN::new_minute_min(1231)])).await?;
   assert_to_truefalse!(res_minute, QGEN::new_minute_hm(20, 31), num_success, num_failure);
 
   print!("<<{:^58}>>", "minute - query sent in BE");
 
-  let res_minute=send_query_be(handle, QGEN::new_mixed_list(vec![QGEN::new_general_null(), QGEN::new_minute_min(1231)])).await?;
+  let res_minute=send_query_be_uds(handle, QGEN::new_mixed_list(vec![QGEN::new_general_null(), QGEN::new_minute_min(1231)])).await?;
   assert_to_truefalse!(res_minute, QGEN::new_minute_hm(20, 31), num_success, num_failure);
 
   // Second //-------------------------------------/
   print!("<<{:^58}>>", "second - query sent in LE");
 
-  let res_second=send_query_le(handle, QGEN::new_mixed_list(vec![QGEN::new_general_null(), QGEN::new_second_hms(3, 17, 26)])).await?;
+  let res_second=send_query_le_uds(handle, QGEN::new_mixed_list(vec![QGEN::new_general_null(), QGEN::new_second_hms(3, 17, 26)])).await?;
   assert_to_truefalse!(res_second, QGEN::new_second_hms(3, 17, 26), num_success, num_failure);
 
   print!("<<{:^58}>>", "second - query sent in BE");
 
-  let res_second=send_query_be(handle, QGEN::new_mixed_list(vec![QGEN::new_general_null(), QGEN::new_second_hms(3, 17, 26)])).await?;
+  let res_second=send_query_be_uds(handle, QGEN::new_mixed_list(vec![QGEN::new_general_null(), QGEN::new_second_hms(3, 17, 26)])).await?;
   assert_to_truefalse!(res_second, QGEN::new_second_hms(3, 17, 26), num_success, num_failure);
 
   // Time //--------------------------------------/
   print!("<<{:^58}>>", "time - query sent in LE");
 
-  let res_time=send_query_le(handle, QGEN::new_mixed_list(vec![QGEN::new_general_null(), QGEN::new_time_hms_millis(21, 56, 7, 302)])).await?;
+  let res_time=send_query_le_uds(handle, QGEN::new_mixed_list(vec![QGEN::new_general_null(), QGEN::new_time_hms_millis(21, 56, 7, 302)])).await?;
   assert_to_truefalse!(res_time, QGEN::new_time_hms_millis(21, 56, 7, 302), num_success, num_failure);
 
   print!("<<{:^58}>>", "time - query sent in BE");
 
-  let res_time=send_query_be(handle, QGEN::new_mixed_list(vec![QGEN::new_general_null(), QGEN::new_time_hms_millis(21, 56, 7, 302)])).await?;
+  let res_time=send_query_be_uds(handle, QGEN::new_mixed_list(vec![QGEN::new_general_null(), QGEN::new_time_hms_millis(21, 56, 7, 302)])).await?;
   assert_to_truefalse!(res_time, QGEN::new_time_hms_millis(21, 56, 7, 302), num_success, num_failure);
 
   Ok((num_success, num_failure))
@@ -610,7 +609,7 @@ async fn serialize_atom_test(handle:&mut  TcpStream) -> io::Result<(u32, u32)>{
 * Test one aspect of interface
 * - deserialize list q object
 */
-async fn deserialize_list_test(handle: &mut TcpStream) -> io::Result<(u32, u32)>{
+async fn deserialize_list_test(handle: &mut UnixStreamH) -> io::Result<(u32, u32)>{
   println!("\n+{:-^70}+\n", "|| Deserialize List ||");
 
   let mut num_success: u32=0;
@@ -619,115 +618,115 @@ async fn deserialize_list_test(handle: &mut TcpStream) -> io::Result<(u32, u32)>
   // Boolean //-----------------------------------/
   print!("<<{:^58}>>", "bool list");
 
-  let res_bool=send_string_query_le(handle, "`p#0000111b").await?;
+  let res_bool=send_string_query_le_uds(handle, "`p#0000111b").await?;
   assert_to_truefalse!(res_bool, QGEN::new_bool_list(Attribute::Parted, vec![false, false, false, false, true, true, true]), num_success, num_failure);
   
   // GUID //--------------------------------------/
   print!("<<{:^58}>>", "GUID list");
 
-  let res_guid=send_string_query_le(handle, "`u#\"G\"$/:(\"8c6b8b64-6815-6084-0a3e-178401251b68\"; \"5ae7962d-49f2-404d-5aec-f7c8abbae288\")").await?;
+  let res_guid=send_string_query_le_uds(handle, "`u#\"G\"$/:(\"8c6b8b64-6815-6084-0a3e-178401251b68\"; \"5ae7962d-49f2-404d-5aec-f7c8abbae288\")").await?;
   assert_to_truefalse!(res_guid, QGEN::new_GUID_list(Attribute::Unique, vec![[0x8c, 0x6b, 0x8b, 0x64, 0x68, 0x15, 0x60, 0x84, 0x0a, 0x3e, 0x17, 0x84, 0x01, 0x25, 0x1b, 0x68], [0x5a, 0xe7, 0x96, 0x2d, 0x49, 0xf2, 0x40, 0x4d, 0x5a, 0xec, 0xf7, 0xc8, 0xab, 0xba, 0xe2, 0x88]]), num_success, num_failure);
   
   // Byte //--------------------------------------/
   print!("<<{:^58}>>", "byte list");
 
-  let res_byte=send_string_query_le(handle, "`byte$3 4 62").await?;
+  let res_byte=send_string_query_le_uds(handle, "`byte$3 4 62").await?;
   assert_to_truefalse!(res_byte, QGEN::new_byte_list(Attribute::None, vec![0x03, 0x04, 0x3e]), num_success, num_failure);
   
   // Short //-------------------------------------/
   print!("<<{:^58}>>", "short list");
 
-  let res_short=send_string_query_le(handle, "`short$8 -128 1260").await?;
+  let res_short=send_string_query_le_uds(handle, "`short$8 -128 1260").await?;
   assert_to_truefalse!(res_short, QGEN::new_short_list(Attribute::None, vec![8_i16, -128, 1260]), num_success, num_failure);
   
   // Int //---------------------------------------/
   print!("<<{:^58}>>", "int list");
 
-  let res_int=send_string_query_le(handle, "enlist 65537i").await?;
+  let res_int=send_string_query_le_uds(handle, "enlist 65537i").await?;
   assert_to_truefalse!(res_int, QGEN::new_int_list(Attribute::None, vec![65537_i32]), num_success, num_failure);
   
   // Int //---------------------------------------/
   print!("<<{:^58}>>", "long list");
 
-  let res_long=send_string_query_le(handle, "200 300 300").await?;
+  let res_long=send_string_query_le_uds(handle, "200 300 300").await?;
   assert_to_truefalse!(res_long, QGEN::new_long_list(Attribute::None, vec![200_i64, 300, 300]), num_success, num_failure);
   
   // Long //--------------------------------------/
   print!("<<{:^58}>>", "real list");
 
-  let res_real=send_string_query_le(handle, "`s#2.35 102.32 82389.679e").await?;
+  let res_real=send_string_query_le_uds(handle, "`s#2.35 102.32 82389.679e").await?;
   assert_to_truefalse!(res_real, QGEN::new_real_list(Attribute::Sorted, vec![2.35_f32, 102.32, 82389.679]), num_success, num_failure);
   
   // Float //--------------------------------------/
   print!("<<{:^58}>>", "float list");
 
-  let res_float=send_string_query_le(handle, "(acos; asin) @\\: 1").await?;
+  let res_float=send_string_query_le_uds(handle, "(acos; asin) @\\: 1").await?;
   assert_to_truefalse_float_list!(res_float, vec![0_f64, 1.570796_f64], 0.000001, num_success, num_failure);
   
   // Char //---------------------------------------/
   print!("<<{:^58}>>", "string");
 
-  let res_char=send_string_query_le(handle, ".Q.a[0 1 2 3]").await?;
+  let res_char=send_string_query_le_uds(handle, ".Q.a[0 1 2 3]").await?;
   assert_to_truefalse!(res_char, QGEN::new_char_list(Attribute::None, "abcd"), num_success, num_failure);
     
   // Symbol //-------------------------------------/
   print!("<<{:^58}>>", "symbol list");
 
-  let res_symbol=send_string_query_le(handle, "`u#`Kx`Systems").await?;
+  let res_symbol=send_string_query_le_uds(handle, "`u#`Kx`Systems").await?;
   assert_to_truefalse!(res_symbol, QGEN::new_symbol_list(Attribute::Unique, vec!["Kx", "Systems"]), num_success, num_failure);
 
   // Timestamp //----------------------------------/
   print!("<<{:^58}>>", "timestamp list");
   
-  let res_timestamp=send_string_query_le(handle, "2007.10.12D18:43:20.123456789 + 1D 2D").await?;
+  let res_timestamp=send_string_query_le_uds(handle, "2007.10.12D18:43:20.123456789 + 1D 2D").await?;
   assert_to_truefalse!(res_timestamp, QGEN::new_timestamp_list_ymd_hms_nanos(Attribute::None, vec![(2007, 10, 13, 18, 43, 20, 123456789), (2007, 10, 14, 18, 43, 20, 123456789)]), num_success, num_failure);
 
   // Month //--------------------------------------/
   print!("<<{:^58}>>", "month list");
 
-  let res_month=send_string_query_le(handle, "`month$79 103 221").await?;
+  let res_month=send_string_query_le_uds(handle, "`month$79 103 221").await?;
   assert_to_truefalse!(res_month, QGEN::new_month_list_ym(Attribute::None, vec![(2006, 8), (2008, 8), (2018, 6)]), num_success, num_failure);
 
   // Date //---------------------------------------/
   print!("<<{:^58}>>", "date list");
 
-  let res_date=send_string_query_le(handle, "`s#2018.09.20 2019.03.10 2020.07.12").await?;
+  let res_date=send_string_query_le_uds(handle, "`s#2018.09.20 2019.03.10 2020.07.12").await?;
   assert_to_truefalse!(res_date, QGEN::new_date_list_ymd(Attribute::Sorted, vec![(2018, 9, 20), (2019, 3, 10), (2020, 7, 12)]), num_success, num_failure);
   
   // Datetime //-----------------------------------/
   print!("<<{:^58}>>", "datetime list");
 
-  let res_datetime=send_string_query_le(handle, "2020.09.03T08:50:48.257 + til 3").await?;
+  let res_datetime=send_string_query_le_uds(handle, "2020.09.03T08:50:48.257 + til 3").await?;
   assert_to_truefalse!(res_datetime, QGEN::new_datetime_list_ymd_hms_millis(Attribute::None, vec![(2020, 9, 3, 8, 50, 48, 257), (2020, 9, 4, 8, 50, 48, 257), (2020, 9, 5, 8, 50, 48, 257)]), num_success, num_failure);
 
   // Timespan //-----------------------------------/
   print!("<<{:^58}>>", "timespan list");
   
-  let res_timespan=send_string_query_le(handle, "1D 2D 3D+1").await?;
+  let res_timespan=send_string_query_le_uds(handle, "1D 2D 3D+1").await?;
   assert_to_truefalse!(res_timespan, QGEN::new_timespan_list_nanos(Attribute::None, vec![86400000000001_i64, 172800000000001, 259200000000001]), num_success, num_failure);
 
   // Minute //--------------------------------------/
   print!("<<{:^58}>>", "minute list");
   
-  let res_minute=send_string_query_le(handle, "enlist 10:32").await?;
+  let res_minute=send_string_query_le_uds(handle, "enlist 10:32").await?;
   assert_to_truefalse!(res_minute, QGEN::new_minute_list(Attribute::None, vec![QTimeGEN::new_minute(NaiveTime::from_hms(10, 32, 0))]), num_success, num_failure);
 
   // Second //--------------------------------------/
   print!("<<{:^58}>>", "second list");
 
-  let res_second=send_string_query_le(handle, "18:19:31 19:35:22").await?;
+  let res_second=send_string_query_le_uds(handle, "18:19:31 19:35:22").await?;
   assert_to_truefalse!(res_second, QGEN::new_second_list_hms(Attribute::None, vec![(18, 19, 31), (19, 35, 22)]), num_success, num_failure);
 
   // Time //----------------------------------------/
   print!("<<{:^58}>>", "time list");
 
-  let res_time=send_string_query_le(handle, "07:15:00.902 12:30:45.678").await?;
+  let res_time=send_string_query_le_uds(handle, "07:15:00.902 12:30:45.678").await?;
   assert_to_truefalse!(res_time, QGEN::new_time_list_hms_millis(Attribute::None, vec![(7, 15, 0, 902), (12, 30, 45, 678)]), num_success, num_failure);
   
   // General List //--------------------------------/
   print!("<<{:^58}>>", "general list");
 
-  let res_mixed=send_string_query_le(handle, "(4 5i; `s#0 1 2 3; 2020.03.16; 2.5 1023.71e; `s#4 5h; 63979.32113; 12:30:45.123 22:51:59.030; `p#00011b; 2020.01.03 2020.3.16 2020.08.20; 12:30:45 22:51:59; 2013.04m; \"don't ignore me!\"; 2010.02 2020.05 2013.04m; `u#`more`intensive`test; enlist 1D+300; 2012.04.20D21:17:18.229100200 2012.04.21D18:35:49.469050213)").await?;
+  let res_mixed=send_string_query_le_uds(handle, "(4 5i; `s#0 1 2 3; 2020.03.16; 2.5 1023.71e; `s#4 5h; 63979.32113; 12:30:45.123 22:51:59.030; `p#00011b; 2020.01.03 2020.3.16 2020.08.20; 12:30:45 22:51:59; 2013.04m; \"don't ignore me!\"; 2010.02 2020.05 2013.04m; `u#`more`intensive`test; enlist 1D+300; 2012.04.20D21:17:18.229100200 2012.04.21D18:35:49.469050213)").await?;
   assert_to_truefalse!(res_mixed, QGEN::new_mixed_list(vec![
     QGEN::new_int_list(Attribute::None, vec![4_i32, 5]),
     QGEN::new_long_list(Attribute::Sorted, vec![0_i64, 1, 2, 3]),
@@ -749,7 +748,7 @@ async fn deserialize_list_test(handle: &mut TcpStream) -> io::Result<(u32, u32)>
   
   print!("<<{:^58}>>", "general list 2");
 
-  let res_mixed_dict_table_null=send_string_query_le(handle, "(`a`b`c!1 2 3; `d`e!100.12 113.433; ([] a:1 2; b:2020.03.12D03:15:00.987 2020.05.30D19:14:24.0100304); ::)").await?;
+  let res_mixed_dict_table_null=send_string_query_le_uds(handle, "(`a`b`c!1 2 3; `d`e!100.12 113.433; ([] a:1 2; b:2020.03.12D03:15:00.987 2020.05.30D19:14:24.0100304); ::)").await?;
   assert_to_truefalse!(res_mixed_dict_table_null, QGEN::new_mixed_list(
     vec![
       QGEN::new_dictionary(QGEN::new_symbol_list(Attribute::None, vec!["a", "b", "c"]), QGEN::new_long_list(Attribute::None, vec![1_i64, 2, 3])), 
@@ -772,7 +771,7 @@ async fn deserialize_list_test(handle: &mut TcpStream) -> io::Result<(u32, u32)>
 * Test one aspect of interface:
 * - serialize list q object in both Big Endian and Little Endian
 */
-async fn serialize_list_test(handle: &mut TcpStream) -> io::Result<(u32, u32)>{
+async fn serialize_list_test(handle: &mut UnixStreamH) -> io::Result<(u32, u32)>{
   println!("\n+{:-^70}+\n", "|| Serialize List ||");
 
   let mut num_success: u32=0;
@@ -781,181 +780,181 @@ async fn serialize_list_test(handle: &mut TcpStream) -> io::Result<(u32, u32)>{
   // Boolean //-------------------------------------/
   print!("<<{:^58}>>", "bool list");
 
-  let res_bool=send_query_le(handle, QGEN::new_mixed_list(vec![QGEN::new_general_null(), QGEN::new_bool_list(Attribute::None, vec![true, false])])).await?;
+  let res_bool=send_query_le_uds(handle, QGEN::new_mixed_list(vec![QGEN::new_general_null(), QGEN::new_bool_list(Attribute::None, vec![true, false])])).await?;
   assert_to_truefalse!(res_bool, QGEN::new_bool_list(Attribute::None, vec![true, false]), num_success, num_failure);
 
   // GUID //----------------------------------------/
   print!("<<{:^58}>>", "GUID list");
 
-  let res_GUID=send_query_le(handle, QGEN::new_mixed_list(vec![QGEN::new_general_null(), QGEN::new_GUID_list(Attribute::None, vec![[0x1e, 0x11, 0x17, 0x0c, 0x42, 0x24, 0x25, 0x2c, 0x1c, 0x14, 0x1e, 0x22, 0x4d, 0x3d, 0x46, 0x24]])])).await?;
+  let res_GUID=send_query_le_uds(handle, QGEN::new_mixed_list(vec![QGEN::new_general_null(), QGEN::new_GUID_list(Attribute::None, vec![[0x1e, 0x11, 0x17, 0x0c, 0x42, 0x24, 0x25, 0x2c, 0x1c, 0x14, 0x1e, 0x22, 0x4d, 0x3d, 0x46, 0x24]])])).await?;
   assert_to_truefalse!(res_GUID, QGEN::new_GUID_list(Attribute::None, vec![[0x1e, 0x11, 0x17, 0x0c, 0x42, 0x24, 0x25, 0x2c, 0x1c, 0x14, 0x1e, 0x22, 0x4d, 0x3d, 0x46, 0x24]]), num_success, num_failure);
   
   // Byte //----------------------------------------/
   print!("<<{:^58}>>", "byte list");
 
-  let res_byte=send_query_le(handle, QGEN::new_mixed_list(vec![QGEN::new_general_null(), QGEN::new_byte_list(Attribute::None, vec![0x3c, 0x22, 0x4f])])).await?;
+  let res_byte=send_query_le_uds(handle, QGEN::new_mixed_list(vec![QGEN::new_general_null(), QGEN::new_byte_list(Attribute::None, vec![0x3c, 0x22, 0x4f])])).await?;
   assert_to_truefalse!(res_byte, QGEN::new_byte_list(Attribute::None, vec![0x3c, 0x22, 0x4f]), num_success, num_failure);
 
   // Short //---------------------------------------/
   print!("<<{:^58}>>", "short list - query sent in LE");
 
-  let res_short=send_query_le(handle, QGEN::new_mixed_list(vec![QGEN::new_general_null(), QGEN::new_short_list(Attribute::Sorted, vec![70_i16, 128, 1028, 2000])])).await?;
+  let res_short=send_query_le_uds(handle, QGEN::new_mixed_list(vec![QGEN::new_general_null(), QGEN::new_short_list(Attribute::Sorted, vec![70_i16, 128, 1028, 2000])])).await?;
   assert_to_truefalse!(res_short, QGEN::new_short_list(Attribute::Sorted, vec![70_i16, 128, 1028, 2000]), num_success, num_failure);
 
   print!("<<{:^58}>>", "short list - query sent in BE");
 
-  let res_short=send_query_be(handle, QGEN::new_mixed_list(vec![QGEN::new_general_null(), QGEN::new_short_list(Attribute::Sorted, vec![70_i16, 128, 1028, 2000])])).await?;
+  let res_short=send_query_be_uds(handle, QGEN::new_mixed_list(vec![QGEN::new_general_null(), QGEN::new_short_list(Attribute::Sorted, vec![70_i16, 128, 1028, 2000])])).await?;
   assert_to_truefalse!(res_short, QGEN::new_short_list(Attribute::Sorted, vec![70_i16, 128, 1028, 2000]), num_success, num_failure);
 
   // Int //-----------------------------------------/
   print!("<<{:^58}>>", "int list - query sent in LE");
 
-  let res_int=send_query_le(handle, QGEN::new_mixed_list(vec![QGEN::new_general_null(), QGEN::new_int_list(Attribute::None, vec![234789_i32, -34567789])])).await?;
+  let res_int=send_query_le_uds(handle, QGEN::new_mixed_list(vec![QGEN::new_general_null(), QGEN::new_int_list(Attribute::None, vec![234789_i32, -34567789])])).await?;
   assert_to_truefalse!(res_int, QGEN::new_int_list(Attribute::None, vec![234789_i32, -34567789]), num_success, num_failure);
 
   print!("<<{:^58}>>", "int list - query sent in BE");
 
-  let res_int=send_query_be(handle, QGEN::new_mixed_list(vec![QGEN::new_general_null(), QGEN::new_int_list(Attribute::None, vec![234789_i32, -34567789])])).await?;
+  let res_int=send_query_be_uds(handle, QGEN::new_mixed_list(vec![QGEN::new_general_null(), QGEN::new_int_list(Attribute::None, vec![234789_i32, -34567789])])).await?;
   assert_to_truefalse!(res_int, QGEN::new_int_list(Attribute::None, vec![234789_i32, -34567789]), num_success, num_failure);
 
   // Long //----------------------------------------/
   print!("<<{:^58}>>", "long list - query sent in LE");
 
-  let res_long=send_query_le(handle, QGEN::new_mixed_list(vec![QGEN::new_general_null(), QGEN::new_long_list(Attribute::None, vec![86400000000000_i64, -86400000000000_i64])])).await?;
+  let res_long=send_query_le_uds(handle, QGEN::new_mixed_list(vec![QGEN::new_general_null(), QGEN::new_long_list(Attribute::None, vec![86400000000000_i64, -86400000000000_i64])])).await?;
   assert_to_truefalse!(res_long, QGEN::new_long_list(Attribute::None, vec![86400000000000_i64, -86400000000000_i64]), num_success, num_failure);
 
   print!("<<{:^58}>>", "long list - query sent in BE");
 
-  let res_long=send_query_le(handle, QGEN::new_mixed_list(vec![QGEN::new_general_null(), QGEN::new_long_list(Attribute::None, vec![86400000000000_i64, -86400000000000_i64])])).await?;
+  let res_long=send_query_le_uds(handle, QGEN::new_mixed_list(vec![QGEN::new_general_null(), QGEN::new_long_list(Attribute::None, vec![86400000000000_i64, -86400000000000_i64])])).await?;
   assert_to_truefalse!(res_long, QGEN::new_long_list(Attribute::None, vec![86400000000000_i64, -86400000000000_i64]), num_success, num_failure);
 
   // Real //----------------------------------------/
   print!("<<{:^58}>>", "real list - query sent in LE");
 
-  let res_real=send_query_le(handle, QGEN::new_mixed_list(vec![QGEN::new_general_null(), QGEN::new_real_list(Attribute::Sorted, vec![-1.25_f32, 100.23, 3000.5639])])).await?;
+  let res_real=send_query_le_uds(handle, QGEN::new_mixed_list(vec![QGEN::new_general_null(), QGEN::new_real_list(Attribute::Sorted, vec![-1.25_f32, 100.23, 3000.5639])])).await?;
   assert_to_truefalse!(res_real, QGEN::new_real_list(Attribute::Sorted, vec![-1.25_f32, 100.23, 3000.5639]), num_success, num_failure);
 
   print!("<<{:^58}>>", "real list - query sent in BE");
 
-  let res_real=send_query_be(handle, QGEN::new_mixed_list(vec![QGEN::new_general_null(), QGEN::new_real_list(Attribute::Sorted, vec![-1.25_f32, 100.23, 3000.5639])])).await?;
+  let res_real=send_query_be_uds(handle, QGEN::new_mixed_list(vec![QGEN::new_general_null(), QGEN::new_real_list(Attribute::Sorted, vec![-1.25_f32, 100.23, 3000.5639])])).await?;
   assert_to_truefalse!(res_real, QGEN::new_real_list(Attribute::Sorted, vec![-1.25_f32, 100.23, 3000.5639]), num_success, num_failure);
 
   // Float //---------------------------------------/
   print!("<<{:^58}>>", "real list - query sent in LE");
 
-  let res_float=send_query_le(handle, QGEN::new_mixed_list(vec![QGEN::new_general_null(), QGEN::new_float_list(Attribute::None, vec![103.678_f64, 0.00034])])).await?;
+  let res_float=send_query_le_uds(handle, QGEN::new_mixed_list(vec![QGEN::new_general_null(), QGEN::new_float_list(Attribute::None, vec![103.678_f64, 0.00034])])).await?;
   //assert_to_truefalse_float_list!(res_float, vec![103.678_f64, 0.00034], 0.00001);
   assert_to_truefalse!(res_float, QGEN::new_float_list(Attribute::None, vec![103.678_f64, 0.00034]), num_success, num_failure);
 
   print!("<<{:^58}>>", "real list - query sent in BE");
 
-  let res_float=send_query_be(handle, QGEN::new_mixed_list(vec![QGEN::new_general_null(), QGEN::new_float_list(Attribute::None, vec![103.678_f64, 0.00034])])).await?;
+  let res_float=send_query_be_uds(handle, QGEN::new_mixed_list(vec![QGEN::new_general_null(), QGEN::new_float_list(Attribute::None, vec![103.678_f64, 0.00034])])).await?;
   assert_to_truefalse_float_list!(res_float, vec![103.678_f64, 0.00034], 0.00001, num_success, num_failure);
 
   // Char //----------------------------------------/
   print!("<<{:^58}>>", "real list");
 
-  let res_char=send_query_le(handle, QGEN::new_mixed_list(vec![QGEN::new_general_null(), QGEN::new_char_list(Attribute::Parted, "aabbccc")])).await?;
+  let res_char=send_query_le_uds(handle, QGEN::new_mixed_list(vec![QGEN::new_general_null(), QGEN::new_char_list(Attribute::Parted, "aabbccc")])).await?;
   assert_to_truefalse!(res_char, QGEN::new_char_list(Attribute::Parted, "aabbccc"), num_success, num_failure);
 
   // Symbol //--------------------------------------/
   print!("<<{:^58}>>", "symbol list");
 
-  let res_symbol=send_query_le(handle, QGEN::new_mixed_list(vec![QGEN::new_general_null(), QGEN::new_symbol_list(Attribute::Unique, vec!["kdb+", "q"])])).await?;
+  let res_symbol=send_query_le_uds(handle, QGEN::new_mixed_list(vec![QGEN::new_general_null(), QGEN::new_symbol_list(Attribute::Unique, vec!["kdb+", "q"])])).await?;
   assert_to_truefalse!(res_symbol, QGEN::new_symbol_list(Attribute::Unique, vec!["kdb+", "q"]), num_success, num_failure);
 
   // Timespan //------------------------------------/
   print!("<<{:^58}>>", "timestamp list - query sent in LE");
 
-  let res_timestamp=send_query_le(handle, QGEN::new_mixed_list(vec![QGEN::new_general_null(), QGEN::new_timestamp_list_ymd_hms_nanos(Attribute::None, vec![(2018, 2, 18, 4, 0, 0, 100), (2019, 12, 3, 4, 5, 10, 3456)])])).await?;
+  let res_timestamp=send_query_le_uds(handle, QGEN::new_mixed_list(vec![QGEN::new_general_null(), QGEN::new_timestamp_list_ymd_hms_nanos(Attribute::None, vec![(2018, 2, 18, 4, 0, 0, 100), (2019, 12, 3, 4, 5, 10, 3456)])])).await?;
   assert_to_truefalse!(res_timestamp, QGEN::new_timestamp_list_ymd_hms_nanos(Attribute::None, vec![(2018, 2, 18, 4, 0, 0, 100), (2019, 12, 3, 4, 5, 10, 3456)]), num_success, num_failure);
   
   print!("<<{:^58}>>", "timestamp list - query sent in BE");
 
-  let res_timestamp=send_query_be(handle, QGEN::new_mixed_list(vec![QGEN::new_general_null(), QGEN::new_timestamp_list_ymd_hms_nanos(Attribute::None, vec![(2018, 2, 18, 4, 0, 0, 100), (2019, 12, 3, 4, 5, 10, 3456)])])).await?;
+  let res_timestamp=send_query_be_uds(handle, QGEN::new_mixed_list(vec![QGEN::new_general_null(), QGEN::new_timestamp_list_ymd_hms_nanos(Attribute::None, vec![(2018, 2, 18, 4, 0, 0, 100), (2019, 12, 3, 4, 5, 10, 3456)])])).await?;
   assert_to_truefalse!(res_timestamp, QGEN::new_timestamp_list_ymd_hms_nanos(Attribute::None, vec![(2018, 2, 18, 4, 0, 0, 100), (2019, 12, 3, 4, 5, 10, 3456)]), num_success, num_failure);
 
   // Month //---------------------------------------/
   print!("<<{:^58}>>", "month list - query sent in LE");
 
-  let res_month=send_query_le(handle, QGEN::new_mixed_list(vec![QGEN::new_general_null(), QGEN::new_month_list_ym(Attribute::None, vec![(2013, 9), (2009, 2)])])).await?;
+  let res_month=send_query_le_uds(handle, QGEN::new_mixed_list(vec![QGEN::new_general_null(), QGEN::new_month_list_ym(Attribute::None, vec![(2013, 9), (2009, 2)])])).await?;
   assert_to_truefalse!(res_month, QGEN::new_month_list_ym(Attribute::None, vec![(2013, 9), (2009, 2)]), num_success, num_failure);
 
   print!("<<{:^58}>>", "month list - query sent in BE");
 
-  let res_month=send_query_be(handle, QGEN::new_mixed_list(vec![QGEN::new_general_null(), QGEN::new_month_list_ym(Attribute::None, vec![(2013, 9), (2009, 2)])])).await?;
+  let res_month=send_query_be_uds(handle, QGEN::new_mixed_list(vec![QGEN::new_general_null(), QGEN::new_month_list_ym(Attribute::None, vec![(2013, 9), (2009, 2)])])).await?;
   assert_to_truefalse!(res_month, QGEN::new_month_list_ym(Attribute::None, vec![(2013, 9), (2009, 2)]), num_success, num_failure);
 
   // Date //----------------------------------------/
   print!("<<{:^58}>>", "date list - query sent in LE");
 
-  let res_date=send_query_le(handle, QGEN::new_mixed_list(vec![QGEN::new_general_null(), QGEN::new_date_list(Attribute::None, vec![Utc.ymd(2000, 2, 9)])])).await?;
+  let res_date=send_query_le_uds(handle, QGEN::new_mixed_list(vec![QGEN::new_general_null(), QGEN::new_date_list(Attribute::None, vec![Utc.ymd(2000, 2, 9)])])).await?;
   assert_to_truefalse!(res_date, QGEN::new_date_list_ymd(Attribute::None, vec![(2000, 2, 9)]), num_success, num_failure);
 
   print!("<<{:^58}>>", "date list - query sent in BE");
 
-  let res_date=send_query_be(handle, QGEN::new_mixed_list(vec![QGEN::new_general_null(), QGEN::new_date_list(Attribute::None, vec![Utc.ymd(2000, 2, 9)])])).await?;
+  let res_date=send_query_be_uds(handle, QGEN::new_mixed_list(vec![QGEN::new_general_null(), QGEN::new_date_list(Attribute::None, vec![Utc.ymd(2000, 2, 9)])])).await?;
   assert_to_truefalse!(res_date, QGEN::new_date_list_ymd(Attribute::None, vec![(2000, 2, 9)]), num_success, num_failure);
 
   // Datetime //----------------------------------------/
   print!("<<{:^58}>>", "datetime list - query sent in LE");
 
-  let res_datetime=send_query_le(handle, QGEN::new_mixed_list(vec![QGEN::new_general_null(), QGEN::new_datetime_list_ymd_hms_millis(Attribute::None, vec![(2004, 6, 17, 11, 32, 40, 803)])])).await?;
+  let res_datetime=send_query_le_uds(handle, QGEN::new_mixed_list(vec![QGEN::new_general_null(), QGEN::new_datetime_list_ymd_hms_millis(Attribute::None, vec![(2004, 6, 17, 11, 32, 40, 803)])])).await?;
   assert_to_truefalse!(res_datetime, QGEN::new_datetime_list_ymd_hms_millis(Attribute::None, vec![(2004, 6, 17, 11, 32, 40, 803)]), num_success, num_failure);
 
   print!("<<{:^58}>>", "datetime list - query sent in BE");
 
-  let res_datetime=send_query_be(handle, QGEN::new_mixed_list(vec![QGEN::new_general_null(), QGEN::new_datetime_list_ymd_hms_millis(Attribute::None, vec![(2004, 6, 17, 11, 32, 40, 803)])])).await?;
+  let res_datetime=send_query_be_uds(handle, QGEN::new_mixed_list(vec![QGEN::new_general_null(), QGEN::new_datetime_list_ymd_hms_millis(Attribute::None, vec![(2004, 6, 17, 11, 32, 40, 803)])])).await?;
   assert_to_truefalse!(res_datetime, QGEN::new_datetime_list_ymd_hms_millis(Attribute::None, vec![(2004, 6, 17, 11, 32, 40, 803)]), num_success, num_failure);
 
   // Timespan //----------------------------------------/
   print!("<<{:^58}>>", "timespan list - query sent in LE");
 
-  let res_timespan=send_query_le(handle, QGEN::new_mixed_list(vec![QGEN::new_general_null(), QGEN::new_timespan_list_nanos(Attribute::None, vec![999_i64, 10000, 100000000])])).await?;
+  let res_timespan=send_query_le_uds(handle, QGEN::new_mixed_list(vec![QGEN::new_general_null(), QGEN::new_timespan_list_nanos(Attribute::None, vec![999_i64, 10000, 100000000])])).await?;
   assert_to_truefalse!(res_timespan, QGEN::new_timespan_list_nanos(Attribute::None, vec![999_i64, 10000, 100000000]), num_success, num_failure);
 
   print!("<<{:^58}>>", "timespan list - query sent in BE");
 
-  let res_timespan=send_query_be(handle, QGEN::new_mixed_list(vec![QGEN::new_general_null(), QGEN::new_timespan_list_nanos(Attribute::None, vec![999_i64, 10000, 100000000])])).await?;
+  let res_timespan=send_query_be_uds(handle, QGEN::new_mixed_list(vec![QGEN::new_general_null(), QGEN::new_timespan_list_nanos(Attribute::None, vec![999_i64, 10000, 100000000])])).await?;
   assert_to_truefalse!(res_timespan, QGEN::new_timespan_list_nanos(Attribute::None, vec![999_i64, 10000, 100000000]), num_success, num_failure);
 
   // Minute //------------------------------------------/
   print!("<<{:^58}>>", "minute list - query sent in LE");
   
-  let res_minute=send_query_le(handle, QGEN::new_mixed_list(vec![QGEN::new_general_null(), QGEN::new_minute_list_hm(Attribute::None, vec![(12, 21), (3,2)])])).await?;
+  let res_minute=send_query_le_uds(handle, QGEN::new_mixed_list(vec![QGEN::new_general_null(), QGEN::new_minute_list_hm(Attribute::None, vec![(12, 21), (3,2)])])).await?;
   assert_to_truefalse!(res_minute, QGEN::new_minute_list_hm(Attribute::None, vec![(12, 21), (3,2)]), num_success, num_failure);
 
   print!("<<{:^58}>>", "minute list - query sent in BE");
 
-  let res_minute=send_query_be(handle, QGEN::new_mixed_list(vec![QGEN::new_general_null(), QGEN::new_minute_list_hm(Attribute::None, vec![(12, 21), (3,2)])])).await?;
+  let res_minute=send_query_be_uds(handle, QGEN::new_mixed_list(vec![QGEN::new_general_null(), QGEN::new_minute_list_hm(Attribute::None, vec![(12, 21), (3,2)])])).await?;
   assert_to_truefalse!(res_minute, QGEN::new_minute_list_hm(Attribute::None, vec![(12, 21), (3,2)]), num_success, num_failure);
 
   // Second //------------------------------------------/
   print!("<<{:^58}>>", "second list - query sent in LE");
 
-  let res_second=send_query_le(handle, QGEN::new_mixed_list(vec![QGEN::new_general_null(), QGEN::new_second_list_hms(Attribute::Sorted, vec![(3, 17, 26), (4, 0, 49)])])).await?;
+  let res_second=send_query_le_uds(handle, QGEN::new_mixed_list(vec![QGEN::new_general_null(), QGEN::new_second_list_hms(Attribute::Sorted, vec![(3, 17, 26), (4, 0, 49)])])).await?;
   assert_to_truefalse!(res_second, QGEN::new_second_list_hms(Attribute::Sorted, vec![(3, 17, 26), (4, 0, 49)]), num_success, num_failure);
 
   print!("<<{:^58}>>", "second list - query sent in BE");
 
-  let res_second=send_query_be(handle, QGEN::new_mixed_list(vec![QGEN::new_general_null(), QGEN::new_second_list_hms(Attribute::Sorted, vec![(3, 17, 26), (4, 0, 49)])])).await?;
+  let res_second=send_query_be_uds(handle, QGEN::new_mixed_list(vec![QGEN::new_general_null(), QGEN::new_second_list_hms(Attribute::Sorted, vec![(3, 17, 26), (4, 0, 49)])])).await?;
   assert_to_truefalse!(res_second, QGEN::new_second_list_hms(Attribute::Sorted, vec![(3, 17, 26), (4, 0, 49)]), num_success, num_failure);
 
   // Time //--------------------------------------------/
   print!("<<{:^58}>>", "time list - query sent in LE");
 
-  let res_time=send_query_le(handle, QGEN::new_mixed_list(vec![QGEN::new_general_null(), QGEN::new_time_list_hms_millis(Attribute::None, vec![(21, 56, 7, 302), (0, 4, 15, 0)])])).await?;
+  let res_time=send_query_le_uds(handle, QGEN::new_mixed_list(vec![QGEN::new_general_null(), QGEN::new_time_list_hms_millis(Attribute::None, vec![(21, 56, 7, 302), (0, 4, 15, 0)])])).await?;
   assert_to_truefalse!(res_time, QGEN::new_time_list_hms_millis(Attribute::None, vec![(21, 56, 7, 302), (0, 4, 15, 0)]), num_success, num_failure);
 
   print!("<<{:^58}>>", "time list - query sent in BE");
 
-  let res_time=send_query_be(handle, QGEN::new_mixed_list(vec![QGEN::new_general_null(), QGEN::new_time_list_hms_millis(Attribute::None, vec![(21, 56, 7, 302), (0, 4, 15, 0)])])).await?;
+  let res_time=send_query_be_uds(handle, QGEN::new_mixed_list(vec![QGEN::new_general_null(), QGEN::new_time_list_hms_millis(Attribute::None, vec![(21, 56, 7, 302), (0, 4, 15, 0)])])).await?;
   assert_to_truefalse!(res_time, QGEN::new_time_list_hms_millis(Attribute::None, vec![(21, 56, 7, 302), (0, 4, 15, 0)]), num_success, num_failure);
 
   // General List //------------------------------------/
   print!("<<{:^58}>>", "general list - query sent in LE");
 
-  send_query_async_le(handle, QGEN::new_mixed_list(vec![
+  send_query_async_le_uds(handle, QGEN::new_mixed_list(vec![
     QGEN::new_char_list(Attribute::None, "set"),
     QGEN::new_symbol("a"),
     QGEN::new_mixed_list(vec![
@@ -968,7 +967,7 @@ async fn serialize_list_test(handle: &mut TcpStream) -> io::Result<(u32, u32)>{
     ])
   ])).await?;
 
-  let res_mixed=send_string_query_le(handle, "a").await?;
+  let res_mixed=send_string_query_le_uds(handle, "a").await?;
   assert_to_truefalse!(res_mixed, 
     QGEN::new_mixed_list(vec![
       QGEN::new_long(42),
@@ -981,7 +980,7 @@ async fn serialize_list_test(handle: &mut TcpStream) -> io::Result<(u32, u32)>{
 
   print!("<<{:^58}>>", "general list - query sent in BE");
 
-  send_query_async_be(handle, QGEN::new_mixed_list(vec![
+  send_query_async_be_uds(handle, QGEN::new_mixed_list(vec![
     QGEN::new_char_list(Attribute::None, "set"),
     QGEN::new_symbol("a"),
     QGEN::new_mixed_list(vec![
@@ -994,7 +993,7 @@ async fn serialize_list_test(handle: &mut TcpStream) -> io::Result<(u32, u32)>{
     ])
   ])).await?;
 
-  let res_mixed=send_string_query_le(handle, "a").await?;
+  let res_mixed=send_string_query_le_uds(handle, "a").await?;
   assert_to_truefalse!(res_mixed, 
     QGEN::new_mixed_list(vec![
       QGEN::new_long(42),
@@ -1011,7 +1010,7 @@ async fn serialize_list_test(handle: &mut TcpStream) -> io::Result<(u32, u32)>{
 /*
 * Test deserialization of null or infinity q object
 */
-async fn deserialize_null_infinity_test(handle: &mut TcpStream) -> io::Result<(u32, u32)>{
+async fn deserialize_null_infinity_test(handle: &mut UnixStreamH) -> io::Result<(u32, u32)>{
   println!("\n+{:-^70}+\n", "|| Deserialize Null & Infinity ||");
 
   let mut num_success: u32=0;
@@ -1020,13 +1019,13 @@ async fn deserialize_null_infinity_test(handle: &mut TcpStream) -> io::Result<(u
   // Non Float Null //----------------------------------/
   print!("<<{:^58}>>", "non-float null");
 
-  let res_null=send_string_query_le(handle, "(0Ng; 0Nh; 0Ni; 0Nj; 0Np; 0Nm; 0Nd; 0Nz; 0Nn; 0Nu; 0Nv; 0Nt)").await?;
+  let res_null=send_string_query_le_uds(handle, "(0Ng; 0Nh; 0Ni; 0Nj; 0Np; 0Nm; 0Nd; 0Nz; 0Nn; 0Nu; 0Nv; 0Nt)").await?;
   assert_to_truefalse!(res_null, QGEN::new_mixed_list(vec![
     QGEN::new_GUID(Q_0Ng), QGEN::new_short(Q_0Nh), QGEN::new_int(Q_0Ni), QGEN::new_long(Q_0Nj), QGEN::new_timestamp(Q_0Np), QGEN::new_month(Q_0Nm), QGEN::new_date(Q_0Nd), QGEN::new_datetime(Q_0Nz), QGEN::new_timespan(*Q_0Nn), QGEN::new_minute(Q_0Nu), QGEN::new_second(Q_0Nv), QGEN::new_time(Q_0Nt)
   ]), num_success, num_failure);
 
   print!("<<{:^58}>>", "float null");
-  let res_decimal_null=send_string_query_le(handle, "(0Ne; 0n)").await?;
+  let res_decimal_null=send_string_query_le_uds(handle, "(0Ne; 0n)").await?;
   let rust_q_vec=res_decimal_null.into_q_vec()?;
   assert_to_truefalse_custom!(||{
     assert!(rust_q_vec[0].clone().into_f32().expect("Failed to convert into f32").is_nan());
@@ -1035,14 +1034,14 @@ async fn deserialize_null_infinity_test(handle: &mut TcpStream) -> io::Result<(u
   
   print!("<<{:^58}>>", "non-float infinity");
 
-  let res_infinity=send_string_query_le(handle, "(0Wh; -0Wh; 0Wi; -0Wi; 0Wj; -0Wj; 0Wp; 0Wm; 0Wd; 0Wz; 0Wn; -0Wn; 0Wu; 0Wv; 0Wt)").await?;
+  let res_infinity=send_string_query_le_uds(handle, "(0Wh; -0Wh; 0Wi; -0Wi; 0Wj; -0Wj; 0Wp; 0Wm; 0Wd; 0Wz; 0Wn; -0Wn; 0Wu; 0Wv; 0Wt)").await?;
   assert_to_truefalse!(res_infinity, QGEN::new_mixed_list(vec![
     QGEN::new_short(Q_0Wh), QGEN::new_short(Q_NEG_0Wh), QGEN::new_int(Q_0Wi), QGEN::new_int(Q_NEG_0Wi), QGEN::new_long(Q_0Wj), QGEN::new_long(Q_NEG_0Wj), QGEN::new_timestamp(Q_0Wp), QGEN::new_month(Q_0Wm), QGEN::new_date(Q_0Wd), QGEN::new_datetime(*Q_0Wz), QGEN::new_timespan(*Q_0Wn), QGEN::new_timespan(*Q_NEG_0Wn), QGEN::new_minute(Q_0Wu), QGEN::new_second(Q_0Wv), QGEN::new_time(Q_0Wt)
   ]), num_success, num_failure);
 
   print!("<<{:^58}>>", "decimal infinity");
 
-  let res_decimal_infinity=send_string_query_le(handle, "(0We; -0We; 0w; -0w)").await?;
+  let res_decimal_infinity=send_string_query_le_uds(handle, "(0We; -0We; 0w; -0w)").await?;
   let rust_q_vec = res_decimal_infinity.into_q_vec()?;
   assert_to_truefalse_custom!(||{
     assert!(rust_q_vec[0].clone().into_f32().expect("Failed to convert into f32").is_infinite());
@@ -1059,7 +1058,7 @@ async fn deserialize_null_infinity_test(handle: &mut TcpStream) -> io::Result<(u
 * Note: All basic type q objects have been tested in both Little Endian and Big Endian;
 * thereofore sending only in Little Endian is enough.
 */
-async fn serialize_null_infinity_test(handle: &mut TcpStream) -> io::Result<(u32, u32)>{
+async fn serialize_null_infinity_test(handle: &mut UnixStreamH) -> io::Result<(u32, u32)>{
   println!("\n+{:-^70}+\n", "|| Serialize Null & Infinity ||");
 
   let mut num_success: u32=0;
@@ -1068,7 +1067,7 @@ async fn serialize_null_infinity_test(handle: &mut TcpStream) -> io::Result<(u32
   // Non Float Null //----------------------------------/
   print!("<<{:^58}>>", "non-float null");
 
-  let res_null=send_query_le(handle, QGEN::new_mixed_list(vec![QGEN::new_general_null(), 
+  let res_null=send_query_le_uds(handle, QGEN::new_mixed_list(vec![QGEN::new_general_null(), 
     QGEN::new_mixed_list(vec![
       QGEN::new_GUID(Q_0Ng), QGEN::new_short(Q_0Nh), QGEN::new_int(Q_0Ni), QGEN::new_long(Q_0Nj), QGEN::new_timestamp(Q_0Np), QGEN::new_month(Q_0Nm), QGEN::new_date(Q_0Nd), QGEN::new_datetime(Q_0Nz), QGEN::new_timespan(*Q_0Nn), QGEN::new_minute(Q_0Nu), QGEN::new_second(Q_0Nv), QGEN::new_time(Q_0Nt)
     ])
@@ -1079,7 +1078,7 @@ async fn serialize_null_infinity_test(handle: &mut TcpStream) -> io::Result<(u32
 
   print!("<<{:^58}>>", "decimal null");
 
-  let res_decimal_null_list=send_query_le(handle, QGEN::new_mixed_list(vec![QGEN::new_general_null(), 
+  let res_decimal_null_list=send_query_le_uds(handle, QGEN::new_mixed_list(vec![QGEN::new_general_null(), 
     QGEN::new_mixed_list(vec![
       QGEN::new_real(Q_0Ne),
       QGEN::new_float(Q_0n)
@@ -1093,7 +1092,7 @@ async fn serialize_null_infinity_test(handle: &mut TcpStream) -> io::Result<(u32
   
   print!("<<{:^58}>>", "non-float infinity");
 
-  let res_infinity=send_query_le(handle, QGEN::new_mixed_list(vec![QGEN::new_general_null(),
+  let res_infinity=send_query_le_uds(handle, QGEN::new_mixed_list(vec![QGEN::new_general_null(),
     QGEN::new_mixed_list(vec![
       QGEN::new_short(Q_0Wh), QGEN::new_short(Q_NEG_0Wh), QGEN::new_int(Q_0Wi), QGEN::new_int(Q_NEG_0Wi), QGEN::new_long(Q_0Wj), QGEN::new_long(Q_NEG_0Wj), QGEN::new_timestamp(Q_0Wp), QGEN::new_month(Q_0Wm), QGEN::new_date(Q_0Wd), QGEN::new_datetime(*Q_0Wz), QGEN::new_timespan(*Q_0Wn), QGEN::new_timespan(*Q_NEG_0Wn), QGEN::new_minute(Q_0Wu), QGEN::new_second(Q_0Wv), QGEN::new_time(Q_0Wt)
     ])
@@ -1104,7 +1103,7 @@ async fn serialize_null_infinity_test(handle: &mut TcpStream) -> io::Result<(u32
 
   print!("<<{:^58}>>", "float infinity");
 
-  let res_decimal_infinity=send_query_le(handle, QGEN::new_mixed_list(vec![QGEN::new_general_null(), 
+  let res_decimal_infinity=send_query_le_uds(handle, QGEN::new_mixed_list(vec![QGEN::new_general_null(), 
     QGEN::new_mixed_list(vec![QGEN::new_real(Q_0We), QGEN::new_real(Q_NEG_0We), QGEN::new_float(Q_0w), QGEN::new_float(Q_NEG_0w)])
   ])).await?;
   let rust_q_vec = res_decimal_infinity.into_q_vec()?;
@@ -1121,7 +1120,7 @@ async fn serialize_null_infinity_test(handle: &mut TcpStream) -> io::Result<(u32
 /*
 * Test deserialization of dictionary q object in both Big Endian and Little Endian
 */
-async fn deserialize_dictionary_test(handle: &mut TcpStream) -> io::Result<(u32, u32)>{
+async fn deserialize_dictionary_test(handle: &mut UnixStreamH) -> io::Result<(u32, u32)>{
   println!("\n+{:-^70}+\n", "|| Deserialize Dictionary ||");
 
   let mut num_success: u32=0;
@@ -1130,7 +1129,7 @@ async fn deserialize_dictionary_test(handle: &mut TcpStream) -> io::Result<(u32,
   // Atom Dictionry //----------------------------------/
   print!("<<{:^58}>>", "atom simple dictionary - query sent in LE");
 
-  let res_atom_dict=send_string_query_le(handle, "`a`b`c!2009.01 2001.12 2017.08m").await?;
+  let res_atom_dict=send_string_query_le_uds(handle, "`a`b`c!2009.01 2001.12 2017.08m").await?;
   assert_to_truefalse!(res_atom_dict, QGEN::new_dictionary(
       QGEN::new_symbol_list(Attribute::None, vec!["a", "b", "c"]),
       QGEN::new_month_list(Attribute::None, vec![Utc.ymd(2009, 1, 1), Utc.ymd(2001, 12, 1), Utc.ymd(2017, 8, 1)])
@@ -1139,7 +1138,7 @@ async fn deserialize_dictionary_test(handle: &mut TcpStream) -> io::Result<(u32,
 
   print!("<<{:^58}>>", "atom simple dictionary - query sent in BE");
 
-  let res_atom_dict=send_string_query_be(handle, "`a`b`c!2009.01 2001.12 2017.08m").await?;
+  let res_atom_dict=send_string_query_be_uds(handle, "`a`b`c!2009.01 2001.12 2017.08m").await?;
   assert_to_truefalse!(res_atom_dict, QGEN::new_dictionary(
       QGEN::new_symbol_list(Attribute::None, vec!["a", "b", "c"]),
       QGEN::new_month_list(Attribute::None, vec![Utc.ymd(2009, 1, 1), Utc.ymd(2001, 12, 1), Utc.ymd(2017, 8, 1)])
@@ -1148,7 +1147,7 @@ async fn deserialize_dictionary_test(handle: &mut TcpStream) -> io::Result<(u32,
 
   print!("<<{:^58}>>", "atom mixed dictionary - query sent in LE");
 
-  let res_atom_dict=send_string_query_le(handle, "`a`b`c`d!(2020.10.01D00:09:28.879392249; `Rust; 0.032809; 09:23:04.540)").await?;
+  let res_atom_dict=send_string_query_le_uds(handle, "`a`b`c`d!(2020.10.01D00:09:28.879392249; `Rust; 0.032809; 09:23:04.540)").await?;
   assert_to_truefalse!(res_atom_dict, QGEN::new_dictionary(
     QGEN::new_symbol_list(Attribute::None, vec!["a", "b", "c", "d"]),
     QGEN::new_mixed_list(vec![
@@ -1161,7 +1160,7 @@ async fn deserialize_dictionary_test(handle: &mut TcpStream) -> io::Result<(u32,
 
   print!("<<{:^58}>>", "atom mixed dictionary - query sent in BE");
 
-  let res_atom_dict=send_string_query_be(handle, "`a`b`c`d!(2020.10.01D00:09:28.879392249; `Rust; 0.032809; 09:23:04.540)").await?;
+  let res_atom_dict=send_string_query_be_uds(handle, "`a`b`c`d!(2020.10.01D00:09:28.879392249; `Rust; 0.032809; 09:23:04.540)").await?;
   assert_to_truefalse!(res_atom_dict, QGEN::new_dictionary(
     QGEN::new_symbol_list(Attribute::None, vec!["a", "b", "c", "d"]),
     QGEN::new_mixed_list(vec![
@@ -1175,7 +1174,7 @@ async fn deserialize_dictionary_test(handle: &mut TcpStream) -> io::Result<(u32,
   // Sorted Dictionry //--------------------------------/
   print!("<<{:^58}>>", "sorted dictionary - query sent in LE");
 
-  let res_sorted_dict=send_string_query_le(handle, "`s#`john`luke`mark`mattew!(149.582 39.78; 2019.11.01 2012.04.09 2000.02.03; 30 93 0 44; 10001b)").await?;
+  let res_sorted_dict=send_string_query_le_uds(handle, "`s#`john`luke`mark`mattew!(149.582 39.78; 2019.11.01 2012.04.09 2000.02.03; 30 93 0 44; 10001b)").await?;
   assert_to_truefalse!(res_sorted_dict, QGEN::new_dictionary(
     QGEN::new_symbol_list(Attribute::Sorted, vec!["john", "luke", "mark", "mattew"]),
     QGEN::new_mixed_list(vec![
@@ -1188,7 +1187,7 @@ async fn deserialize_dictionary_test(handle: &mut TcpStream) -> io::Result<(u32,
 
   print!("<<{:^58}>>", "sorted dictionary - query sent in BE");
 
-  let res_sorted_dict=send_string_query_be(handle, "`s#`john`luke`mark`mattew!(149.582 39.78; 2019.11.01 2012.04.09 2000.02.03; 30 93 0 44; 10001b)").await?;
+  let res_sorted_dict=send_string_query_be_uds(handle, "`s#`john`luke`mark`mattew!(149.582 39.78; 2019.11.01 2012.04.09 2000.02.03; 30 93 0 44; 10001b)").await?;
   assert_to_truefalse!(res_sorted_dict, QGEN::new_dictionary(
     QGEN::new_symbol_list(Attribute::Sorted, vec!["john", "luke", "mark", "mattew"]),
     QGEN::new_mixed_list(vec![
@@ -1202,7 +1201,7 @@ async fn deserialize_dictionary_test(handle: &mut TcpStream) -> io::Result<(u32,
   // List Dictionry //---------------------------------/
   print!("<<{:^58}>>", "sorted dictionary - query sent in LE");
 
-  let res_list_dict=send_string_query_le(handle, "`integer`times`syms`floats`bools`dates`timestamp`timestamps!(1 2i; 22:45:25.122 21:19:59.091; `p#`Belfast`Belfast`Newry`Newry`Newry`Tokyo`Tokyo; 2011.003 102.34 7.19995; 1101b; `s#2020.02.19 2020.07.19; 2012.09.09D20:10:52.347; 2012.09.09D20:10:52.347 2012.09.09D20:10:52.347000002)").await?;
+  let res_list_dict=send_string_query_le_uds(handle, "`integer`times`syms`floats`bools`dates`timestamp`timestamps!(1 2i; 22:45:25.122 21:19:59.091; `p#`Belfast`Belfast`Newry`Newry`Newry`Tokyo`Tokyo; 2011.003 102.34 7.19995; 1101b; `s#2020.02.19 2020.07.19; 2012.09.09D20:10:52.347; 2012.09.09D20:10:52.347 2012.09.09D20:10:52.347000002)").await?;
   assert_to_truefalse!(res_list_dict, QGEN::new_dictionary(
     QGEN::new_symbol_list(Attribute::None, vec!["integer", "times", "syms", "floats", "bools", "dates", "timestamp", "timestamps"]),
     QGEN::new_mixed_list(vec![
@@ -1219,7 +1218,7 @@ async fn deserialize_dictionary_test(handle: &mut TcpStream) -> io::Result<(u32,
 
   print!("<<{:^58}>>", "sorted dictionary - query sent in BE");
 
-  let res_list_dict=send_string_query_be(handle, "`integer`times`syms`floats`bools`dates`timestamp`timestamps!(1 2i; 22:45:25.122 21:19:59.091; `p#`Belfast`Belfast`Newry`Newry`Newry`Tokyo`Tokyo; 2011.003 102.34 7.19995; 1101b; `s#2020.02.19 2020.07.19; 2012.09.09D20:10:52.347; 2012.09.09D20:10:52.347 2012.09.09D20:10:52.347000002)").await?;
+  let res_list_dict=send_string_query_be_uds(handle, "`integer`times`syms`floats`bools`dates`timestamp`timestamps!(1 2i; 22:45:25.122 21:19:59.091; `p#`Belfast`Belfast`Newry`Newry`Newry`Tokyo`Tokyo; 2011.003 102.34 7.19995; 1101b; `s#2020.02.19 2020.07.19; 2012.09.09D20:10:52.347; 2012.09.09D20:10:52.347 2012.09.09D20:10:52.347000002)").await?;
   assert_to_truefalse!(res_list_dict, QGEN::new_dictionary(
     QGEN::new_symbol_list(Attribute::None, vec!["integer", "times", "syms", "floats", "bools", "dates", "timestamp", "timestamps"]),
     QGEN::new_mixed_list(vec![
@@ -1240,7 +1239,7 @@ async fn deserialize_dictionary_test(handle: &mut TcpStream) -> io::Result<(u32,
 /*
 * Test serialization of dictionary q object in both Little Endian and Big Endian
 */
-async fn serialize_dictionary_test(handle:&mut TcpStream) -> io::Result<(u32, u32)>{
+async fn serialize_dictionary_test(handle:&mut UnixStreamH) -> io::Result<(u32, u32)>{
   println!("\n+{:-^70}+\n", "|| Dictionary Test ||");
 
   let mut num_success: u32=0;
@@ -1249,9 +1248,9 @@ async fn serialize_dictionary_test(handle:&mut TcpStream) -> io::Result<(u32, u3
   // Update Dictionry //--------------------------------/
   print!("<<{:^58}>>", "update dictionary - query sent in LE");
 
-  send_string_query_async_le(handle, "upd:upsert").await?;
-  send_string_query_async_le(handle, "dict:enlist[`]!enlist (::)").await?;
-  send_query_async_le(handle, QGEN::new_mixed_list(vec![
+  send_string_query_async_le_uds(handle, "upd:upsert").await?;
+  send_string_query_async_le_uds(handle, "dict:enlist[`]!enlist (::)").await?;
+  send_query_async_le_uds(handle, QGEN::new_mixed_list(vec![
     QGEN::new_symbol("upd"),
     QGEN::new_symbol("dict"),
     QGEN::new_dictionary(
@@ -1260,7 +1259,7 @@ async fn serialize_dictionary_test(handle:&mut TcpStream) -> io::Result<(u32, u3
     )]
   )).await?;
 
-  let res_dict=send_string_query_le(handle, "dict").await?;
+  let res_dict=send_string_query_le_uds(handle, "dict").await?;
   assert_to_truefalse!(res_dict, 
     QGEN::new_dictionary(
       QGEN::new_symbol_list(Attribute::None, vec!["", "a", "b", "c"]),
@@ -1274,9 +1273,9 @@ async fn serialize_dictionary_test(handle:&mut TcpStream) -> io::Result<(u32, u3
 
   print!("<<{:^58}>>", "update dictionary - query sent in BE");
 
-  send_string_query_async_le(handle, "upd:upsert").await?;
-  send_string_query_async_le(handle, "dict:enlist[`]!enlist (::)").await?;
-  send_query_async_be(handle, QGEN::new_mixed_list(
+  send_string_query_async_le_uds(handle, "upd:upsert").await?;
+  send_string_query_async_le_uds(handle, "dict:enlist[`]!enlist (::)").await?;
+  send_query_async_be_uds(handle, QGEN::new_mixed_list(
     vec![
       QGEN::new_symbol("upd"),
       QGEN::new_symbol("dict"),
@@ -1291,7 +1290,7 @@ async fn serialize_dictionary_test(handle:&mut TcpStream) -> io::Result<(u32, u3
     )
   ).await?;
 
-  let res_dict=send_string_query_le(handle, "dict",).await?;
+  let res_dict=send_string_query_le_uds(handle, "dict",).await?;
   assert_to_truefalse!(res_dict, 
     QGEN::new_dictionary(
       QGEN::new_symbol_list(Attribute::None, vec!["", "a", "b", "c"]),
@@ -1306,7 +1305,7 @@ async fn serialize_dictionary_test(handle:&mut TcpStream) -> io::Result<(u32, u3
   // Atom Dictionry //----------------------------------/
   print!("<<{:^58}>>", "atom simple dictionary - query sent in LE");
 
-  let res_atom_dict=send_query_le(handle, QGEN::new_mixed_list(
+  let res_atom_dict=send_query_le_uds(handle, QGEN::new_mixed_list(
     vec![
       QGEN::new_general_null(),
       QGEN::new_dictionary(
@@ -1324,7 +1323,7 @@ async fn serialize_dictionary_test(handle:&mut TcpStream) -> io::Result<(u32, u3
 
   print!("<<{:^58}>>", "atom simple dictionary - query sent in BE");
 
-  let res_atom_dict=send_query_be(handle, QGEN::new_mixed_list(vec![
+  let res_atom_dict=send_query_be_uds(handle, QGEN::new_mixed_list(vec![
     QGEN::new_general_null(),
     QGEN::new_dictionary(
       QGEN::new_symbol_list(Attribute::None, vec!["a", "b", "c"]),
@@ -1340,7 +1339,7 @@ async fn serialize_dictionary_test(handle:&mut TcpStream) -> io::Result<(u32, u3
 
   print!("<<{:^58}>>", "atom mixed dictionary - query sent in LE");
 
-  let res_atom_dict=send_query_le(handle, QGEN::new_mixed_list(vec![
+  let res_atom_dict=send_query_le_uds(handle, QGEN::new_mixed_list(vec![
     QGEN::new_general_null(),
     QGEN::new_dictionary(
       QGEN::new_symbol_list(Attribute::None, vec!["a", "b", "c", "d"]),
@@ -1365,7 +1364,7 @@ async fn serialize_dictionary_test(handle:&mut TcpStream) -> io::Result<(u32, u3
 
   print!("<<{:^58}>>", "atom mixed dictionary - query sent in BE");
 
-  let res_atom_dict=send_query_be(handle, QGEN::new_mixed_list(vec![
+  let res_atom_dict=send_query_be_uds(handle, QGEN::new_mixed_list(vec![
     QGEN::new_general_null(),
     QGEN::new_dictionary(
       QGEN::new_symbol_list(Attribute::None, vec!["a", "b", "c", "d"]),
@@ -1391,7 +1390,7 @@ async fn serialize_dictionary_test(handle:&mut TcpStream) -> io::Result<(u32, u3
   // Sorted Dictionry //--------------------------------/
   print!("<<{:^58}>>", "sorted dictionary - query sent in LE");
 
-  let res_sorted_dict=send_query_le(handle, QGEN::new_mixed_list(vec![
+  let res_sorted_dict=send_query_le_uds(handle, QGEN::new_mixed_list(vec![
     QGEN::new_general_null(),
     QGEN::new_dictionary(
       QGEN::new_symbol_list(Attribute::Sorted, vec!["john", "luke", "mark", "mattew"]),
@@ -1415,7 +1414,7 @@ async fn serialize_dictionary_test(handle:&mut TcpStream) -> io::Result<(u32, u3
 
   print!("<<{:^58}>>", "sorted dictionary - query sent in BE");
 
-  let res_sorted_dict=send_query_be(handle, QGEN::new_mixed_list(vec![
+  let res_sorted_dict=send_query_be_uds(handle, QGEN::new_mixed_list(vec![
     QGEN::new_general_null(),
     QGEN::new_dictionary(
       QGEN::new_symbol_list(Attribute::Sorted, vec!["john", "luke", "mark", "mattew"]),
@@ -1441,7 +1440,7 @@ async fn serialize_dictionary_test(handle:&mut TcpStream) -> io::Result<(u32, u3
   // List Dictionry //---------------------------------/
   print!("<<{:^58}>>", "list dictionary - query sent in LE");
 
-  let res_list_dict=send_query_le(handle, QGEN::new_mixed_list(vec![
+  let res_list_dict=send_query_le_uds(handle, QGEN::new_mixed_list(vec![
     QGEN::new_general_null(),
     QGEN::new_dictionary(
       QGEN::new_symbol_list(Attribute::None, vec!["integer", "times", "syms", "floats", "bools", "dates", "timestamp", "timestamps"]),
@@ -1474,7 +1473,7 @@ async fn serialize_dictionary_test(handle:&mut TcpStream) -> io::Result<(u32, u3
 
   print!("<<{:^58}>>", "list dictionary - query sent in BE");
 
-  let res_list_dict=send_query_be(handle, QGEN::new_mixed_list(vec![
+  let res_list_dict=send_query_be_uds(handle, QGEN::new_mixed_list(vec![
     QGEN::new_general_null(),
     QGEN::new_dictionary(
       QGEN::new_symbol_list(Attribute::None, vec!["integer", "times", "syms", "floats", "bools", "dates", "timestamp", "timestamps"]),
@@ -1511,7 +1510,7 @@ async fn serialize_dictionary_test(handle:&mut TcpStream) -> io::Result<(u32, u3
 /*
 * Test deserialization of table q object
 */
-async fn deserialize_table_test(handle: &mut TcpStream) -> io::Result<(u32, u32)>{
+async fn deserialize_table_test(handle: &mut UnixStreamH) -> io::Result<(u32, u32)>{
   println!("\n+{:-^70}+\n", "|| Deserialize Table ||");
 
   let mut num_success: u32=0;
@@ -1521,11 +1520,11 @@ async fn deserialize_table_test(handle: &mut TcpStream) -> io::Result<(u32, u32)
   print!("<<{:^58}>>", "table");
 
   // define table
-  send_string_query_async_le(handle, "trade:flip `time`sym`price`size`ex!\"psfjc\"$\\:()").await?;
-  send_string_query_async_le(handle, "`trade insert (2020.06.01D07:02:13.238912781 2020.06.01D07:02:14.230892785 2020.06.01D07:03:01.137860387; `Kx`FD`Kx; 103.68 107.42 103.3; 1000 2000 3000; \"NLN\")").await?;
-  send_string_query_async_le(handle, "update sym:`g#sym from `trade").await?;
+  send_string_query_async_le_uds(handle, "trade:flip `time`sym`price`size`ex!\"psfjc\"$\\:()").await?;
+  send_string_query_async_le_uds(handle, "`trade insert (2020.06.01D07:02:13.238912781 2020.06.01D07:02:14.230892785 2020.06.01D07:03:01.137860387; `Kx`FD`Kx; 103.68 107.42 103.3; 1000 2000 3000; \"NLN\")").await?;
+  send_string_query_async_le_uds(handle, "update sym:`g#sym from `trade").await?;
 
-  let res_table=send_string_query_le(handle, "select from trade").await?;
+  let res_table=send_string_query_le_uds(handle, "select from trade").await?;
   assert_to_truefalse!(res_table, QGEN::new_table(
     vec!["time", "sym", "price", "size", "ex"],
     vec![
@@ -1546,7 +1545,7 @@ async fn deserialize_table_test(handle: &mut TcpStream) -> io::Result<(u32, u32)
 * Note: As components of table are symbol list and general list, thorough check of
 * these components are not conducted. They are covered in list test.
 */
-async fn serialize_table_test(handle: &mut TcpStream) -> io::Result<(u32, u32)>{
+async fn serialize_table_test(handle: &mut UnixStreamH) -> io::Result<(u32, u32)>{
   println!("\n+{:-^60}+\n", "|| Serialize Table ||");
 
   let mut num_success: u32=0;
@@ -1556,10 +1555,10 @@ async fn serialize_table_test(handle: &mut TcpStream) -> io::Result<(u32, u32)>{
   print!("<<{:^58}>>", "update table - query sent in LE");
 
   // define table
-  send_string_query_async_le(handle, "upd:insert").await?;
-  send_string_query_async_le(handle, "trade:flip `time`sym`price`size`ex!\"psfjc\"$\\:()").await?;
+  send_string_query_async_le_uds(handle, "upd:insert").await?;
+  send_string_query_async_le_uds(handle, "trade:flip `time`sym`price`size`ex!\"psfjc\"$\\:()").await?;
   // Update table
-  send_query_async_le(handle, QGEN::new_mixed_list(vec![
+  send_query_async_le_uds(handle, QGEN::new_mixed_list(vec![
     QGEN::new_symbol("upd"),
     QGEN::new_symbol("trade"),
     QGEN::new_mixed_list(vec![
@@ -1570,9 +1569,9 @@ async fn serialize_table_test(handle: &mut TcpStream) -> io::Result<(u32, u32)>{
       QGEN::new_char_list(Attribute::None, "NLN")
     ])
   ])).await?;
-  send_string_query_async_le(handle, "update sym:`g#sym from `trade").await?;
+  send_string_query_async_le_uds(handle, "update sym:`g#sym from `trade").await?;
 
-  let res_table=send_string_query_le(handle, "select from trade").await?;
+  let res_table=send_string_query_le_uds(handle, "select from trade").await?;
   assert_to_truefalse!(res_table, QGEN::new_table(
     vec!["time", "sym", "price", "size", "ex"],
     vec![
@@ -1587,10 +1586,10 @@ async fn serialize_table_test(handle: &mut TcpStream) -> io::Result<(u32, u32)>{
   print!("<<{:^58}>>", "update table - query sent in BE");
 
   // define table
-  send_string_query_async_le(handle, "upd:insert").await?;
-  send_string_query_async_le(handle, "trade:flip `time`sym`price`size`ex!\"psfjc\"$\\:()").await?;
+  send_string_query_async_le_uds(handle, "upd:insert").await?;
+  send_string_query_async_le_uds(handle, "trade:flip `time`sym`price`size`ex!\"psfjc\"$\\:()").await?;
   // Update table
-  send_query_async_be(handle, QGEN::new_mixed_list(vec![
+  send_query_async_be_uds(handle, QGEN::new_mixed_list(vec![
     QGEN::new_symbol("upd"),
     QGEN::new_symbol("trade"),
     QGEN::new_mixed_list(vec![
@@ -1601,9 +1600,9 @@ async fn serialize_table_test(handle: &mut TcpStream) -> io::Result<(u32, u32)>{
       QGEN::new_char_list(Attribute::None, "NLN")
     ])
   ])).await?;
-  send_string_query_async_le(handle, "update sym:`g#sym from `trade").await?;
+  send_string_query_async_le_uds(handle, "update sym:`g#sym from `trade").await?;
 
-  let res_table=send_string_query_le(handle, "select from trade").await?;
+  let res_table=send_string_query_le_uds(handle, "select from trade").await?;
   assert_to_truefalse!(res_table, QGEN::new_table(
     vec!["time", "sym", "price", "size", "ex"],
     vec![
@@ -1622,7 +1621,7 @@ async fn serialize_table_test(handle: &mut TcpStream) -> io::Result<(u32, u32)>{
 /*
 * Test deserialization of keyed table q object in both Little Endian and Big Endian
 */
-async fn deserialize_keyed_table_test(handle: &mut TcpStream) -> io::Result<(u32, u32)>{
+async fn deserialize_keyed_table_test(handle: &mut UnixStreamH) -> io::Result<(u32, u32)>{
   println!("\n+{:-^70}+\n", "|| Deserialize Keyed Table ||");
 
   let mut num_success: u32=0;
@@ -1631,7 +1630,7 @@ async fn deserialize_keyed_table_test(handle: &mut TcpStream) -> io::Result<(u32
   // Keyed Table //------------------------------------/
   print!("<<{:^58}>>", "keyed table");
 
-  let res_keyed_table=send_string_query_le(handle, "([id:`s#til 3; month: 2000.01 2000.02 2000.03m] stats:113.42 354.923 2749.4f; sym:`Newry`Belfast`London)").await?;
+  let res_keyed_table=send_string_query_le_uds(handle, "([id:`s#til 3; month: 2000.01 2000.02 2000.03m] stats:113.42 354.923 2749.4f; sym:`Newry`Belfast`London)").await?;
   assert_to_truefalse!(res_keyed_table, QGEN::new_keyed_table(
     vec!["id", "month"],
     vec![
@@ -1655,7 +1654,7 @@ async fn deserialize_keyed_table_test(handle: &mut TcpStream) -> io::Result<(u32
 * itself is not necessary. It is covered in the table test. Therefore the test case is
 * restricted to sending a simple keyed table for updating the table. 
 */
-async fn serialize_keyed_table_test(handle: &mut TcpStream) -> io::Result<(u32, u32)>{
+async fn serialize_keyed_table_test(handle: &mut UnixStreamH) -> io::Result<(u32, u32)>{
   println!("\n+{:-^70}+\n", "|| Serialize Keyed Table ||");
 
   let mut num_success: u32=0;
@@ -1678,16 +1677,16 @@ async fn serialize_keyed_table_test(handle: &mut TcpStream) -> io::Result<(u32, 
   ).expect("Failed to build keyed table");
   
   // Set keyed table
-  send_string_query_async_le(handle, "assign:set").await?;
-  send_query_async_le(handle, QGEN::new_mixed_list(vec![QGEN::new_symbol("assign"), QGEN::new_symbol("keyedtab"), keyed_table])).await?;
+  send_string_query_async_le_uds(handle, "assign:set").await?;
+  send_query_async_le_uds(handle, QGEN::new_mixed_list(vec![QGEN::new_symbol("assign"), QGEN::new_symbol("keyedtab"), keyed_table])).await?;
 
   // Update the table
-  send_string_query_async_le(handle, "upd:upsert").await?;
-  send_query_async_le(handle, QGEN::new_mixed_list(vec![QGEN::new_symbol("upd"), QGEN::new_symbol("keyedtab"), QGEN::new_mixed_list(vec![
+  send_string_query_async_le_uds(handle, "upd:upsert").await?;
+  send_query_async_le_uds(handle, QGEN::new_mixed_list(vec![QGEN::new_symbol("upd"), QGEN::new_symbol("keyedtab"), QGEN::new_mixed_list(vec![
     QGEN::new_long(1), QGEN::new_month_ym(2000, 2), QGEN::new_float(1000_f64), QGEN::new_symbol("GoldenCity")
   ])])).await?;
 
-  let res_keyed_table=send_string_query_le(handle, "keyedtab").await?;
+  let res_keyed_table=send_string_query_le_uds(handle, "keyedtab").await?;
   assert_to_truefalse!(res_keyed_table, QGEN::new_keyed_table(
     vec!["id", "month"],
     vec![
@@ -1718,16 +1717,16 @@ async fn serialize_keyed_table_test(handle: &mut TcpStream) -> io::Result<(u32, 
   ).expect("Failed to build keyed table");
   
   // Set keyed table
-  send_string_query_async_le(handle, "assign:set").await?;
-  send_query_async_le(handle, QGEN::new_mixed_list(vec![QGEN::new_symbol("assign"), QGEN::new_symbol("keyedtab"), keyed_table])).await?;
+  send_string_query_async_le_uds(handle, "assign:set").await?;
+  send_query_async_le_uds(handle, QGEN::new_mixed_list(vec![QGEN::new_symbol("assign"), QGEN::new_symbol("keyedtab"), keyed_table])).await?;
 
   // Update the table
-  send_string_query_async_le(handle, "upd:upsert").await?;
-  send_query_async_be(handle, QGEN::new_mixed_list(vec![QGEN::new_symbol("upd"), QGEN::new_symbol("keyedtab"), QGEN::new_mixed_list(vec![
+  send_string_query_async_le_uds(handle, "upd:upsert").await?;
+  send_query_async_be_uds(handle, QGEN::new_mixed_list(vec![QGEN::new_symbol("upd"), QGEN::new_symbol("keyedtab"), QGEN::new_mixed_list(vec![
     QGEN::new_long(1), QGEN::new_month_ym(2000, 2), QGEN::new_float(1000_f64), QGEN::new_symbol("GoldenCity")
   ])])).await?;
 
-  let res_keyed_table=send_string_query_le(handle, "keyedtab").await?;
+  let res_keyed_table=send_string_query_le_uds(handle, "keyedtab").await?;
   assert_to_truefalse!(res_keyed_table, QGEN::new_keyed_table(
     vec!["id", "month"],
     vec![
@@ -3382,7 +3381,7 @@ fn keyed_table_conversion_test() -> io::Result<(u32, u32)>{
 /*
 * Test if compression and decompresion are triggered properly
 */
-async fn compression_test(handle: &mut TcpStream) -> io::Result<(u32, u32)>{
+async fn compression_test(handle: &mut UnixStreamH) -> io::Result<(u32, u32)>{
   println!("\n+{:-^70}+\n", "|| Compression ||");
 
   let mut num_success: u32=0;
@@ -3391,7 +3390,7 @@ async fn compression_test(handle: &mut TcpStream) -> io::Result<(u32, u32)>{
   print!("<<{:^58}>>", "uncompressed message");
   
   // Set test table remotely
-  send_string_query_async_le(handle, "tab:([]time:2000.01.01D00:00:00+86400000000000*til 1000; sym:raze 250#/: `AAPL`MSFT`AMZ`GOOGL)").await?;
+  send_string_query_async_le_uds(handle, "tab:([]time:2000.01.01D00:00:00+86400000000000*til 1000; sym:raze 250#/: `AAPL`MSFT`AMZ`GOOGL)").await?;
 
   // Prepare q table which will NOT be compressed
   let mut time_vec=vec![KDB_TIMESTAMP_OFFSET; 1000];
@@ -3403,19 +3402,19 @@ async fn compression_test(handle: &mut TcpStream) -> io::Result<(u32, u32)>{
   let original=QGEN::new_table(vec!["time", "sym"], vec![time_col, sym_col])?;
 
   // Set 'set' function remotely
-  send_string_query_async_le(handle, "set0: set").await?;
+  send_string_query_async_le_uds(handle, "set0: set").await?;
 
   // Assign sent table as `tab2`
-  send_query_async_le(handle, QGEN::new_mixed_list(vec![QGEN::new_symbol("set0"), QGEN::new_symbol("tab2"), original])).await?;
+  send_query_async_le_uds(handle, QGEN::new_mixed_list(vec![QGEN::new_symbol("set0"), QGEN::new_symbol("tab2"), original])).await?;
   // Compare with `tab` sent before `tab2`
-  let res_compare=send_string_query_le(handle, "tab ~ tab2").await?;
+  let res_compare=send_string_query_le_uds(handle, "tab ~ tab2").await?;
   assert_to_truefalse!(res_compare, QGEN::new_bool(true), num_success, num_failure);
 
   print!("<<{:^58}>>", "compressed message");
 
   // Prepare a table which should be compressed
-  send_string_query_async_le(handle, "tab:([]time:1000#2000.01.01D00:00:00; sym:raze 250#/: `AAPL`MSFT`AMZ`GOOGL)").await?;
-  let res_compressed=send_string_query_le(handle, "tab").await?;
+  send_string_query_async_le_uds(handle, "tab:([]time:1000#2000.01.01D00:00:00; sym:raze 250#/: `AAPL`MSFT`AMZ`GOOGL)").await?;
+  let res_compressed=send_string_query_le_uds(handle, "tab").await?;
 
   let time_col=QGEN::new_timestamp_list_nanos(Attribute::None, vec![KDB_TIMESTAMP_OFFSET; 1000]);
   let sym_col=QGEN::new_symbol_list(Attribute::None, [vec!["AAPL"; 250], vec!["MSFT"; 250], vec!["AMZ"; 250], vec!["GOOGL"; 250]].concat());

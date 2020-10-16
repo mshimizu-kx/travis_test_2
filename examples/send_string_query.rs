@@ -5,6 +5,9 @@
 * and how to retrieve an underlying value of q object.
 */
 
+#[macro_use]
+extern crate rustkdb;
+
 use rustkdb::connection::*;
 use rustkdb::qtype::*;
 use std::io;
@@ -39,16 +42,18 @@ async fn main() -> Result<(), io::Error>{
   // Get compound list of dictionary and table
   // query is sent in Big Endian encode ("_be")
   let res_mixed_dict_table_null=send_string_query_be(&mut handle, "(`a`b`c!1 2 3; `d`e!100.12 113.433; ([] a:1 2; b:2020.03.12D03:15:00.987 2020.05.30D19:14:24.0100304); ::)").await?;
-  assert_eq!(res_mixed_dict_table_null, QGEN::new_mixed_list(vec![
-    QGEN::new_dictionary(QGEN::new_symbol_list(Attribute::None, vec!["a", "b", "c"]), QGEN::new_long_list(Attribute::None, vec![1_i64, 2, 3])), 
-    QGEN::new_dictionary(QGEN::new_symbol_list(Attribute::None, vec!["d", "e"]), QGEN::new_float_list(Attribute::None, vec![100.12_f64, 113.433])),
-    QGEN::new_table(vec!["a", "b"], vec![
-        QGEN::new_long_list(Attribute::None, vec![1_i64, 2]),
-        QGEN::new_timestamp_list_ymd_hms_nanos(Attribute::None, vec![(2020, 3, 12, 3, 15, 0, 987000000), (2020, 5, 30, 19, 14, 24, 10030400)])
+  assert_eq!(res_mixed_dict_table_null, q_mixed_list![
+    q_dictionary![q_symbol_list!['*'; vec!["a", "b", "c"]]; q_long_list!['*'; vec![1_i64, 2, 3]]], 
+    q_dictionary![q_symbol_list!['*'; vec!["d", "e"]]; q_float_list!['*'; vec![100.12_f64, 113.433]]],
+    q_table![
+      vec!["a", "b"];
+      vec![
+        q_long_list!['*'; vec![1_i64, 2]],
+        q_timestamp_list!["ymd_hms_nanos"; '*'; vec![(2020, 3, 12, 3, 15, 0, 987000000), (2020, 5, 30, 19, 14, 24, 10030400)]]
       ]
-    ).expect("Failed to build table"),
-    QGEN::new_general_null()
-  ]));
+    ].expect("Failed to build table"),
+    q_general_null!["::"]
+  ]);
 
   // Convert q compiund list into vector of q object
   let rust_q_vec=res_mixed_dict_table_null.into_q_vec()?;
@@ -59,8 +64,8 @@ async fn main() -> Result<(), io::Error>{
   
   // Deconpose into key and value
   let (key, value) = rust_q_vec[1].clone().into_key_value()?;
-  assert_eq!(key, QGEN::new_symbol_list(Attribute::None, vec!["d", "e"]));
-  assert_eq!(value,  QGEN::new_float_list(Attribute::None, vec![100.12_f64, 113.433]));
+  assert_eq!(key, q_symbol_list!['*'; vec!["d", "e"]]);
+  assert_eq!(value, q_float_list!['*'; vec![100.12_f64, 113.433]]);
 
   if let Err(e)=send_string_query_le(&mut handle, "exit 0").await{
     eprintln!("{}", e);
