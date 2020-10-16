@@ -12,6 +12,7 @@ jobs:
       os: linux
     - os: windows
     - os: osx
+cache: cargo
 
 before_install:
   - export FILE_ROOT="rustkdb"
@@ -43,8 +44,8 @@ script:
   ## Start q process on 5000
   - nohup q -p 5000 < /dev/null >> qtest.log 2>&1 &
   ## Run test script
-  - cargo run --example test --release
+  - cargo run --example test
+  ## Run test script
+  - cargo run --example test_uds
   ## Clean up log file
   - rm qtest.log
-notifications:
-  slack: kxsys:oDr1mgvVq4ztmPXalwUs4Gio
