@@ -46,6 +46,8 @@ script:
   ## Run test script
   - cargo run --example test
   ## Run test script
-  - cargo run --example test_uds
+  - if [[ $TRAVIS_OS_NAME == "linux" ]]; then
+      cargo run --example test_uds;
+    fi
   ## Clean up log file
   - rm qtest.log
