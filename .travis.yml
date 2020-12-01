@@ -86,9 +86,9 @@ script:
     fi
   # Build Package
   - if [[ $TRAVIS_OS_NAME == "windows" ]]; then
-      7z a -tzip -r ${FILE_NAME} $(pwd)/build/${FILE_ROOT};
+      7z a -tzip -r ${FILE_NAME} build/${FILE_ROOT};
     else
-      tar czf ${FILE_NAME} $(pwd)/build/${FILE_ROOT};
+      tar czf ${FILE_NAME} ./build/${FILE_ROOT};
     fi
 
 deploy:
