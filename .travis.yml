@@ -90,7 +90,7 @@ script:
     elif [[ $TRAVIS_OS_NAME == "linux" || $TRAVIS_OS_NAME == "osx" ]]; then
       tar czf ${FILE_NAME} build/${FILE_ROOT};
     else
-      echo "Unreachable"
+      echo "Unreachable";
     fi
 
 deploy:
