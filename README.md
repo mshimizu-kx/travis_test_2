@@ -1,142 +1,71 @@
-# rustkdb
-Rust interface for kdb+
+# FFI for kdb+
 
-## Introduction
+`ffikdb` is an extension to kdb+ for loading and calling dynamic libraries using pure `q`. 
+It is part of the [_Fusion for kdb+_](https://code.kx.com/q/interfaces/fusion/) interface collection.
 
-KDB IPC interface for the Rust open source programming language.
+The main purpose of the library is to build stable interfaces on top of external libraries, or to interact with the operating system from `q`. No compiler toolchain or writing C/C++ code is required to use this library.
 
-## New to kdb+?
+We are grateful to @abalkin for allowing us to adapt and expand on his original codebase. 
 
-Kdb+ is the world's fastest time-series database, optimized for ingesting, analyzing and storing massive amounts of structured data. To get started with kdb+, please visit https://code.kx.com/q/learn/ for downloads and developer information. For general information, visit https://kx.com/
-
-## New to Rust?
-
-Rust binary releases can be downloaded following the instruction on https://www.rust-lang.org/tools/install
-
-An online introductory tour of the Rust programming language is available [here](https://doc.rust-lang.org/stable/book/).
+Please [report issues](https://github.com/KxSystems/ffikdb/issues) in this repository.
 
 
-## Overview
+## Requirements
 
-**rustkdb** is provided as one of Fusion interfaces of kdb+/q. This crate provides methods to connect to q/kdb+ process, send a (text) query to q process, construct objects representing q objects and convert the objects into Rust type objects. **rustkdb** is using [Tokio](https://tokio.rs/) crate to provide asynchronous execution.
+- Operating system: Linux, macOS 10.12+, Windows 7+
+- kdb+ v3.5 or higher
+- libffi 3.1+ as per instructions. RHEL/CentOS 6/7 provided libffi 3.0.5 can be used as well.
 
-### Connection
-Connection to kdb+ is either of TCP or TLS.
+environment                    | installation
+-------------------------------|----------------------------------------------------------
+Ubuntu Linux with 64-bit kdb+  | `sudo apt-get install libffi-dev`
+Ubuntu Linux with 32-bit kdb+  | `sudo apt-get install libffi-dev:i386`
+RHEL/CentOS  with 64-bit kdb+  | `sudo yum install libffi-devel`
+RHEL/CentOS  with 32-bit kdb+  | `sudo yum install glibc-devel.i686 libgcc.i686 libffi-devel.i686`
+macOS                          | (no action required)
+Windows                        | (no action required)
 
-### Query
-Query to kdb+ is supported by two ways, sending a text query or a functional query which is represented by a compound list of kdb+ ([See detail of IPC](https://code.kx.com/q4m3/11_IO/#116-interprocess-communication)). Compression/decompression of messages is done following [kdb+ implementation](https://code.kx.com/q/basics/ipc/#compression).
-
-## Utility Types
-
-**rustkdb** defines some utility types to express distinct q types:
-- `QTime`: Intermediate object for q minute, q second and q time to hold either of time value or possible null or inifinity value.
-- `QTable`: Struct holding header and column values of table
-- `QDictionary`: Struct holding key and value of dictionary
-- `QKeyedTable`: Struct holding key table and value table of keyed table
-- `QList`: Struct holding an attribute and list values of q list object
-
-*Note: These types are not accessed by a user.*
-
-## Type Mapping
-
-Using the utility types above, type mapping between q types and Rust types are following:
-
-| q                | Rust                                |
-|------------------|-------------------------------------|
-| `bool`           | `bool`                              |
-| `GUID`           | `[u8; 16]`                          |
-| `byte`           | `u8`                                |
-| `short`          | `i16`                               |
-| `int`            | `i32`                               |
-| `long`           | `i64`                               |
-| `real`           | `f32`                               |
-| `float`          | `f64`                               |
-| `char`           | `char`                              |
-| `symbol`         | `String`                            |
-| `timestamp`      | `chrono::DateTime<Utc>`             |
-| `month`          | `chrono::Date<Utc>`                 |
-| `date`           | `chrono::Date<Utc>`                 |
-| `datetime`       | `chrono::DateTime<Utc>`             |
-| `timespan`       | `chrono::Duration`                  |
-| `minute`         | `chrono::NaiveTieme` or `QTime`     |
-| `second`         | `chrono::NaiveTieme` or `QTime`     |
-| `time`           | `chrono::NaiveTieme` or `QTime`     |
-| `table`          | `QTable`                            |
-| `dictionary`     | `QDictionary`                       |
-| `keyed table`    | `QKeyedTable`                       |
-| `bool list`      | `QList<Vec<bool>>`                  |
-| `GUID list`      | `QList<Vec<[u8; 16]>>`              |
-| `byte list`      | `QList<Vec<u8>>`                    |
-| `short list`     | `QList<Vec<i16>>`                   |
-| `int list`       | `QList<Vec<i32>>`                   |
-| `long list`      | `QList<Vec<i64>>`                   |
-| `real list`      | `QList<Vec<f32>>`                   |
-| `float list`     | `QList<Vec<f64>>`                   |
-| `string`         | `QList<String>`                     |
-| `symbol list`    | `QList<Vec<String>>`                |
-| `timestamp list` | `QList<Vec<chrono::DateTime<Utc>>>` |
-| `month list`     | `QList<Vec<chrono::Date<Utc>>>`     |
-| `date list`      | `QList<Vec<chrono::Date<Utc>>>`     |
-| `datetime list`  | `QList<Vec<chrono::DateTime<Utc>>>` |
-| `timespan list`  | `QList<Vec<chrono::Duration>>`      |
-| `minute list`    | `QList<Vec<chrono::NaiveTime>>`     |
-| `second list`    | `QList<Vec<chrono::NaiveTime>>`     |
-| `time list`      | `QList<Vec<chrono::NaiveTime>>`     |
-| `general null`   | `QGeneralNull`                      |
 
 ## Installation
 
-As this interface is a crate itself, using this crate follows ordinary crate import manner, i.e. adding `rustkdb` to `Cargo.toml` in your Rust project.
+### Pre-built Binary
 
-## Examples
+Download the appropriate release archive from [releases](../../releases/latest) page. 
 
-Run q process on localhost:5000 enabling TLS connect though connection to q process is done only by TCP in this example.
+Then unpack and install by following command according to your platform type.
+
+environment     | action
+----------------|---------------------------------------------------------------------------------------
+Linux           | `tar xzvf ffi_linux-v*.tar.gz -C $QHOME --strip 1`
+macOS           | `tar xzvf ffi_osx-v*.tar.gz -C $QHOME --strip 1`
+Windows         | Open the archive and copy content of the `ffi` folder (`ffi\*`) to `%QHOME%` or `c:\q`
+
+
+### Build from Source
+
+Clome this repository and exeute following commands.
 
 ```bash
 
-$ q -p 5000 -E 1
+$ mkdir build && cd build
+$ cmake -DCMAKE_BUILD_TYPE=Release ..
+$ make
+$ make install
 
 ```
 
-Define an example function wchich takes one argument of numeric type(short, int or long).
+## Documentation
 
-```q
+See [code.kx.com/q/interfaces/ffi](https://code.kx.com/q/interfaces/ffi/) for documentation.
 
-q)fibonacci:{[n] $[n in 1 2; n#1; (n-2) {[seq] seq, sum -2#seq}/ 1 1]}
+## Status
 
-```
+The FFI interface is provided here under an Apache 2.0 license.
 
-As **rustkdb** is using Tokio crate, it is assumed in the example below that Tokio runtime is imorted in main function.
+If you find issues with the interface or have feature requests please consider raising an issue [here](https://github.com/KxSystems/ffikdb/issues).
 
-```Rust
+If you wish to contribute to this project please follow the contributing guide [here](https://github.com/KxSystems/ffikdb/blob/master/CONTRIBUTING.md).
 
-use rustkdb::qtype::*;
-use rustkdb::connection::*;
+## Unsupported Functionality
 
-// Connect to q process
-let mut handle=connect("localhost", 5000, "kdbuser:pass", 1000, 200).await.expect("Failed to connect");
-
-// Send a functional query synchronously with Little Endian encode
-// This query is equivalent to (`fibonacci; 10i)
-let res_long_list=send_query_le(&mut handle, QGEN::new_mixed_list(vec![QGEN::new_symbol("fibonacci"), QGEN::new_int(10)])).await?;
-// 1 1 2 3 5 8 13 21 34 55j
-println!("{}", res_long_list);
-
-// Send a text query asynchronously in Big Endian encode
-send_string_query_async_be(&mut handle, "a:1+2").await?;
-
-// Send a text query synchroously in Little Endian encode
-let res_short_list=send_string_query_le(handle, "type each a + til 3").await?;
-
-// Build q list object
-let handmade_short_list=QGEN::new_short_list(Attribute::None, vec![-7_i16, -7, -7]):
-assert_eq!(res_short, handmade_short_list);
-
-// Convert it into a tuple of attribute and underlying vector
-let (attribute, rust_short_vec)=res_short_list.into_i16_vec()?;
-assert_eq!(attribute, Attribute::None);
-assert_eq!(rust_short_vec, vec![-7_i16, -7, -7];
-
-```
-
-More examples can be found in crate documentation and [example folder](./examples/) in this repository.
+Foreign functions taking a struct do not work properly (can cause crash). For example, a function taking `K` pointer does not work.

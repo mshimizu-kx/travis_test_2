@@ -1,2 +1,2 @@
-/target
-Cargo.lock
+build/
+q/libffikdb.so
