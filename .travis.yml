@@ -86,9 +86,9 @@ script:
     fi
   # Build Package
   - if [[ $TRAVIS_OS_NAME == "windows" ]]; then
-      7z a -tzip -r ${FILE_NAME} build/${FILE_ROOT};
+      7z a -tzip -r ${FILE_NAME} build/${FILE_ROOT}/*;
     else
-      tar czf ${FILE_NAME} build/${FILE_ROOT};
+      tar czf ${FILE_NAME} -C build/${FILE_ROOT} .;
     fi
 
 deploy:
@@ -97,5 +97,5 @@ deploy:
   file: ${FILE_NAME}
   on:
     tags: true
-    condition: $TRAVIS_OS_NAME == windows || $TRAVIS_OS_NAME == osx || ($TRAVIS_OS_NAME == linux && $TRAVIS_DIST == xenial)
+    condition: $TRAVIS_OS_NAME == "windows" || $TRAVIS_OS_NAME == "osx" || ($TRAVIS_OS_NAME == "linux" && $TRAVIS_DIST == "xenial")
   skip_cleanup: true
