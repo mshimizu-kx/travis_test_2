@@ -14,7 +14,7 @@ compiler: gcc
 before_install:
   # Set global flags
   - export FILE_ROOT=ffikdb
-  - export TESTS="False"
+  - export TESTS="True"
   # Install dependencies
   - if [[ $TRAVIS_OS_NAME == "linux" ]]; then
       sudo apt-get install -y libffi-dev libffi-dev:i386;
@@ -76,7 +76,7 @@ before_install:
 
 script:
   # Test
-  - if [[ $TESTS == True && "x$OD" != "x" && "x$QLIC_KC" != "x" ]]; then
+  - if [[ $TESTS == "True" && "x$OD" != "x" && "x$QLIC_KC" != "x" ]]; then
       curl -o test.q -L https://github.com/KxSystems/hdf5/raw/master/test.q;
       if [[ $TRAVIS_OS_NAME == "windows" ]]; then
         q test.q tests_win/ -q;
@@ -87,8 +87,10 @@ script:
   # Build Package
   - if [[ $TRAVIS_OS_NAME == "windows" ]]; then
       7z a -tzip -r ${FILE_NAME} build/${FILE_ROOT};
+    elif [[ $TRAVIS_OS_NAME == "linux" || $TRAVIS_OS_NAME == "osx" ]]; then
+      tar czf ${FILE_NAME} build/${FILE_ROOT};
     else
-      tar czf ${FILE_NAME} ./build/${FILE_ROOT};
+      echo "Unreachable"
     fi
 
 deploy:
