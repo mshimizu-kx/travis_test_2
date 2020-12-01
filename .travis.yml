@@ -18,9 +18,9 @@ before_install:
   # Install dependencies
   # Remove libc6-dev libc6-dev-i386 for trial
   - if [[ $TRAVIS_OS_NAME == "linux" ]]; then
-      apt-get install -y libffi-dev
+      apt-get install -y libffi-dev;
     else
-      echo "libffi is installed. nothing to do"
+      echo "libffi is installed. nothing to do";
     fi
   # Set OS directory and license location
   - if [[ $TRAVIS_OS_NAME == "linux" ]]; then
