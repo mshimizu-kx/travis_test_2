@@ -18,7 +18,7 @@ before_install:
   # Install dependencies
   # Remove libc6-dev libc6-dev-i386 for trial
   - if [[ $TRAVIS_OS_NAME == "linux" ]]; then
-      apt-get install libffi-dev libffi-dev:i386;
+      apt-get install -y libffi-dev libffi-dev:i386
     else
       echo "libffi is installed. nothing to do"
     fi
