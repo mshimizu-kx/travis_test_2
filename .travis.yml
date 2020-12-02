@@ -87,10 +87,8 @@ script:
   # Build Package
   - if [[ $TRAVIS_OS_NAME == "windows" ]]; then
       7z a -tzip -r ${FILE_NAME} build/${FILE_ROOT};
-    elif [[ $TRAVIS_OS_NAME == "linux" || $TRAVIS_OS_NAME == "osx" ]]; then
-      tar czf ${FILE_NAME} build/${FILE_ROOT};
     else
-      echo "Unreachable";
+      tar -czf ${FILE_NAME} build/${FILE_ROOT};
     fi
 
 deploy:
